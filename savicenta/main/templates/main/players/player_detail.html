@@ -1,0 +1,13 @@
+{% extends "main/base.html" %} {% block content %}
+<h2>{{ object.ime }} {{ object.prezime }}</h2>
+<p>Pozicija: {{ object.get_pozicija_display }}</p>
+<p>Kategorija: {{ object.get_kategorija_display }}</p>
+<p>Datum rođenja: {{ object.datum_rodenja }}</p>
+<p>Broj dresa: {{ object.broj_dresa }}</p>
+<p>Golovi: {{ object.golovi }}</p>
+<p>Asistencije: {{ object.asistencije }}</p>
+
+<a href="{% url 'main:player-update' object.pk %}">Uredi</a> |
+<a href="{% url 'main:player-delete' object.pk %}">Obriši</a> |
+<a href="{% url 'main:player-list' %}">Natrag</a>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Oprema</h2>
+<table class="table table-striped table-hover sortable">
+  <thead>
+    <tr>
+      <th>Naziv</th>
+      <th>Količina</th>
+      <th>Stanje</th>
+      <th>Kategorija</th>
+      <th>Akcije</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in object_list %}
+    <tr>
+      <td>{{ item.naziv }}</td>
+      <td>{{ item.kolicina }}</td>
+      <td>{{ item.stanje }}</td>
+      <td>{{ item.kategorija }}</td>
+      <td>
+        <a
+          href="{% url 'main:equipment-detail' item.id %}"
+          class="btn btn-sm btn-primary"
+          >Detalji</a
+        >
+        <a
+          href="{% url 'main:equipment-update' item.id %}"
+          class="btn btn-sm btn-warning"
+          >Uredi</a
+        >
+        <a
+          href="{% url 'main:equipment-delete' item.id %}"
+          class="btn btn-sm btn-danger"
+          >Obriši</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{% url 'main:equipment-create' %}" class="btn btn-success"
+  >Dodaj opremu</a
+>
+{% endblock %}

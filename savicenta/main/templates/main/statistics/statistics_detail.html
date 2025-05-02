@@ -1,0 +1,23 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Detalji statistike</h2>
+<ul class="list-group">
+  <li class="list-group-item"><strong>Igrač:</strong> {{ object.igrac }}</li>
+  <li class="list-group-item">
+    <strong>Utakmica:</strong> {{ object.utakmica }}
+  </li>
+  <li class="list-group-item"><strong>Golovi:</strong> {{ object.golovi }}</li>
+  <li class="list-group-item">
+    <strong>Asistencije:</strong> {{ object.asistencije }}
+  </li>
+  <li class="list-group-item"><strong>Minute:</strong> {{ object.minute }}</li>
+  <li class="list-group-item">
+    <strong>Žuti kartoni:</strong> {{ object.zuti_kartoni }}
+  </li>
+  <li class="list-group-item">
+    <strong>Crveni kartoni:</strong> {{ object.crveni_kartoni }}
+  </li>
+</ul>
+<a href="{% url 'main:statistics-list' %}" class="btn btn-secondary mt-3"
+  >Natrag</a
+>
+{% endblock %}

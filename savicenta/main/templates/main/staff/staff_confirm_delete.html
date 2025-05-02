@@ -1,0 +1,11 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Potvrda brisanja</h2>
+<p>Jeste li sigurni da želite obrisati: <strong>{{ object }}</strong>?</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Da, obriši</button>
+  <a href="{% url 'main:staff-detail' object.pk %}" class="btn btn-secondary"
+    >Odustani</a
+  >
+</form>
+{% endblock %}

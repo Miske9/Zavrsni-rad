@@ -1,0 +1,13 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Detalji člana stožera</h2>
+<ul class="list-group">
+  <li class="list-group-item"><strong>Ime:</strong> {{ object.ime }}</li>
+  <li class="list-group-item">
+    <strong>Funkcija:</strong> {{ object.funkcija }}
+  </li>
+  <li class="list-group-item">
+    <strong>Kontakt:</strong> {{ object.kontakt }}
+  </li>
+</ul>
+<a href="{% url 'main:staff-list' %}" class="btn btn-secondary mt-3">Natrag</a>
+{% endblock %}

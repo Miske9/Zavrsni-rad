@@ -1,0 +1,20 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Detalji sastanka</h2>
+<ul class="list-group">
+  <li class="list-group-item"><strong>Datum:</strong> {{ object.datum }}</li>
+  <li class="list-group-item">
+    <strong>Zapisnik:</strong> {{ object.zapisnik }}
+  </li>
+  <li class="list-group-item">
+    <strong>Prisutni:</strong>
+    <ul>
+      {% for person in object.prisutni.all %}
+      <li>{{ person.ime }} ({{ person.funkcija }})</li>
+      {% endfor %}
+    </ul>
+  </li>
+</ul>
+<a href="{% url 'main:meeting-list' %}" class="btn btn-secondary mt-3"
+  >Natrag</a
+>
+{% endblock %}

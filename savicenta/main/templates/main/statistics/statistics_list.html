@@ -1,0 +1,50 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Statistike</h2>
+<table class="table table-striped table-hover sortable">
+  <thead>
+    <tr>
+      <th>Igrač</th>
+      <th>Utakmica</th>
+      <th>Golovi</th>
+      <th>Asistencije</th>
+      <th>Minute</th>
+      <th>Žuti kartoni</th>
+      <th>Crveni kartoni</th>
+      <th>Akcije</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for stat in object_list %}
+    <tr>
+      <td>{{ stat.igrac }}</td>
+      <td>{{ stat.utakmica }}</td>
+      <td>{{ stat.golovi }}</td>
+      <td>{{ stat.asistencije }}</td>
+      <td>{{ stat.minute }}</td>
+      <td>{{ stat.zuti_kartoni }}</td>
+      <td>{{ stat.crveni_kartoni }}</td>
+      <td>
+        <a
+          href="{% url 'main:statistics-detail' stat.id %}"
+          class="btn btn-sm btn-primary"
+          >Detalji</a
+        >
+        <a
+          href="{% url 'main:statistics-update' stat.id %}"
+          class="btn btn-sm btn-warning"
+          >Uredi</a
+        >
+        <a
+          href="{% url 'main:statistics-delete' stat.id %}"
+          class="btn btn-sm btn-danger"
+          >Obriši</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{% url 'main:statistics-create' %}" class="btn btn-success"
+  >Dodaj statistiku</a
+>
+{% endblock %}

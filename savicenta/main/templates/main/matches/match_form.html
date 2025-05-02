@@ -1,0 +1,8 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>{{ view.title }}</h2>
+<form method="post">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit" class="btn btn-success">Spremi</button>
+  <a href="{{ view.cancel_url }}" class="btn btn-secondary">Odustani</a>
+</form>
+{% endblock %}

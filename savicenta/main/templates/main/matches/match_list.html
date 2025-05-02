@@ -1,0 +1,44 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Utakmice</h2>
+<table class="table table-striped table-hover sortable">
+  <thead>
+    <tr>
+      <th>Datum</th>
+      <th>Protivnik</th>
+      <th>Lokacija</th>
+      <th>Rezultat</th>
+      <th>Akcije</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for match in object_list %}
+    <tr>
+      <td>{{ match.datum }}</td>
+      <td>{{ match.protivnik }}</td>
+      <td>{{ match.lokacija }}</td>
+      <td>{{ match.rezultat }}</td>
+      <td>
+        <a
+          href="{% url 'main:match-detail' match.id %}"
+          class="btn btn-sm btn-primary"
+          >Detalji</a
+        >
+        <a
+          href="{% url 'main:match-update' match.id %}"
+          class="btn btn-sm btn-warning"
+          >Uredi</a
+        >
+        <a
+          href="{% url 'main:match-delete' match.id %}"
+          class="btn btn-sm btn-danger"
+          >Obriši</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{% url 'main:match-create' %}" class="btn btn-success"
+  >Dodaj utakmicu</a
+>
+{% endblock %}

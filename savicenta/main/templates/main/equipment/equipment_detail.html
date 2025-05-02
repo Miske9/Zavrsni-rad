@@ -1,0 +1,16 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Detalji opreme</h2>
+<ul class="list-group">
+  <li class="list-group-item"><strong>Naziv:</strong> {{ object.naziv }}</li>
+  <li class="list-group-item">
+    <strong>Količina:</strong> {{ object.kolicina }}
+  </li>
+  <li class="list-group-item"><strong>Stanje:</strong> {{ object.stanje }}</li>
+  <li class="list-group-item">
+    <strong>Kategorija:</strong> {{ object.kategorija }}
+  </li>
+</ul>
+<a href="{% url 'main:equipment-list' %}" class="btn btn-secondary mt-3"
+  >Natrag</a
+>
+{% endblock %}

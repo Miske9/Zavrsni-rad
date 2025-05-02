@@ -1,0 +1,40 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Sastanci</h2>
+<table class="table table-striped table-hover sortable">
+  <thead>
+    <tr>
+      <th>Datum</th>
+      <th>Zapisnik</th>
+      <th>Akcije</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for meeting in object_list %}
+    <tr>
+      <td>{{ meeting.datum }}</td>
+      <td>{{ meeting.zapisnik|truncatechars:50 }}</td>
+      <td>
+        <a
+          href="{% url 'main:meeting-detail' meeting.id %}"
+          class="btn btn-sm btn-primary"
+          >Detalji</a
+        >
+        <a
+          href="{% url 'main:meeting-update' meeting.id %}"
+          class="btn btn-sm btn-warning"
+          >Uredi</a
+        >
+        <a
+          href="{% url 'main:meeting-delete' meeting.id %}"
+          class="btn btn-sm btn-danger"
+          >Obriši</a
+        >
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<a href="{% url 'main:meeting-create' %}" class="btn btn-success"
+  >Dodaj sastanak</a
+>
+{% endblock %}
