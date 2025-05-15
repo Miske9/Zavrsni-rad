@@ -1,0 +1,8 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Članovi uprave</h2>
+<ul>
+  {% for person in staff %}
+  <li>{{ person.first_name }} {{ person.last_name }} – {{ person.role }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

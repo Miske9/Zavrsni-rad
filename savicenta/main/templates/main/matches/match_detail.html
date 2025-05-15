@@ -1,6 +1,6 @@
-{% extends 'main/base.html' %} {% block content %}
+{% extends 'main/base.html' %}{% block content %}
 <h2>Detalji utakmice</h2>
-<ul class="list-group">
+<ul class="list-group mb-3">
   <li class="list-group-item"><strong>Datum:</strong> {{ object.datum }}</li>
   <li class="list-group-item">
     <strong>Protivnik:</strong> {{ object.protivnik }}
@@ -13,5 +13,5 @@
   </li>
   <li class="list-group-item"><strong>Opis:</strong> {{ object.opis }}</li>
 </ul>
-<a href="{% url 'main:match-list' %}" class="btn btn-secondary mt-3">Natrag</a>
+<a class="btn btn-secondary" href="{% url 'main:match-list' %}">Natrag</a>
 {% endblock %}

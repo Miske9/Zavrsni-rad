@@ -1,0 +1,38 @@
+<!-- templates/club/match_detail.html -->
+{% extends "main/base.html" %} {% block content %}
+<h1>Detalji utakmice</h1>
+
+<ul>
+  <li><strong>Datum:</strong> {{ match.date }}</li>
+  <li><strong>Protivnik:</strong> {{ match.opponent }}</li>
+  <li><strong>Lokacija:</strong> {{ match.location }}</li>
+  <li><strong>Kategorija:</strong> {{ match.category.name }}</li>
+</ul>
+
+<h3>Igrači koji su igrali:</h3>
+<ul>
+  {% for mp in match.matchplayer_set.all %}
+  <li>{{ mp.player }}{% if mp.is_captain %} (Kapetan){% endif %}</li>
+  {% empty %}
+  <li>Nema dodanih igrača za ovu utakmicu.</li>
+  {% endfor %}
+</ul>
+
+<h3>Statistika po igraču:</h3>
+<ul>
+  {% for stat in match.playermatchstat_set.all %}
+  <li>
+    {{ stat.player }} – Golovi: {{ stat.goals }}, Asistencije: {{ stat.assists
+    }}
+  </li>
+  {% empty %}
+  <li>Nema zabilježene statistike.</li>
+  {% endfor %}
+</ul>
+<a href="{% url 'main:match_add_stats' match.id %}"
+  >Dodaj golove i asistencije</a
+>
+
+<a href="{% url 'main:match_edit' match.pk %}">Uredi</a> |
+<a href="{% url 'main:match_list' %}">Natrag na popis</a>
+{% endblock %}

@@ -1,11 +1,9 @@
-{% extends 'main/base.html' %} {% block content %}
-<h2>Potvrda brisanja</h2>
-<p>Jeste li sigurni da želite obrisati: <strong>{{ object }}</strong>?</p>
+{% block content %}
+<h2>Brisanje Igrača</h2>
+<p>Jeste li sigurni da želite izbrisati {{ object }}?</p>
 <form method="post">
   {% csrf_token %}
-  <button type="submit" class="btn btn-danger">Da, obriši</button>
-  <a href="{% url 'main:player-detail' object.pk %}" class="btn btn-secondary"
-    >Odustani</a
-  >
+  <button type="submit" class="btn btn-danger">Izbriši</button>
+  <a href="{% url 'main:player-list' %}" class="btn btn-secondary">Odustani</a>
 </form>
 {% endblock %}

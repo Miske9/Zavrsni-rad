@@ -1,15 +1,12 @@
 {% extends 'main/base.html' %} {% block content %}
-<h2>Igrači</h2>
-<table class="table table-striped table-hover sortable">
+<h1>Popis Igrača</h1>
+<table class="table table-striped">
   <thead>
     <tr>
       <th>Ime</th>
       <th>Prezime</th>
       <th>Pozicija</th>
       <th>Kategorija</th>
-      <th>Broj dresa</th>
-      <th>Golovi</th>
-      <th>Asistencije</th>
       <th>Akcije</th>
     </tr>
   </thead>
@@ -20,24 +17,11 @@
       <td>{{ player.prezime }}</td>
       <td>{{ player.get_pozicija_display }}</td>
       <td>{{ player.get_kategorija_display }}</td>
-      <td>{{ player.broj_dresa }}</td>
-      <td>{{ player.golovi }}</td>
-      <td>{{ player.asistencije }}</td>
       <td>
         <a
-          href="{% url 'main:player-detail' player.id %}"
-          class="btn btn-sm btn-primary"
+          href="{% url 'main:player-detail' player.pk %}"
+          class="btn btn-info btn-sm"
           >Detalji</a
-        >
-        <a
-          href="{% url 'main:player-update' player.id %}"
-          class="btn btn-sm btn-warning"
-          >Uredi</a
-        >
-        <a
-          href="{% url 'main:player-delete' player.id %}"
-          class="btn btn-sm btn-danger"
-          >Obriši</a
         >
       </td>
     </tr>
@@ -45,34 +29,6 @@
   </tbody>
 </table>
 <a href="{% url 'main:player-create' %}" class="btn btn-success"
-  >Dodaj igrača</a
+  >Dodaj Igrača</a
 >
-
-<script>
-  // Jednostavno sortiranje klikom na zaglavlje
-  document.querySelectorAll("th").forEach((th) => {
-    th.addEventListener("click", () => {
-      const table = th.closest("table");
-      const tbody = table.querySelector("tbody");
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-
-      const index = Array.from(th.parentNode.children).indexOf(th);
-      const asc = !th.classList.contains("asc");
-
-      rows.sort((a, b) => {
-        const aText = a.children[index].textContent.trim();
-        const bText = b.children[index].textContent.trim();
-        return asc
-          ? aText.localeCompare(bText, "hr", { numeric: true })
-          : bText.localeCompare(aText, "hr", { numeric: true });
-      });
-
-      rows.forEach((row) => tbody.appendChild(row));
-      document
-        .querySelectorAll("th")
-        .forEach((th) => th.classList.remove("asc", "desc"));
-      th.classList.add(asc ? "asc" : "desc");
-    });
-  });
-</script>
 {% endblock %}

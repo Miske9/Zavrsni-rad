@@ -1,11 +1,12 @@
 {% extends 'main/base.html' %} {% block content %}
-<h2>Potvrda brisanja</h2>
-<p>Jeste li sigurni da želite obrisati: <strong>{{ object }}</strong>?</p>
+<h2>Obriši utakmicu</h2>
+<p>
+  Jeste li sigurni da želite obrisati utakmicu protiv {{ object.protivnik }} ({{
+  object.datum }})?
+</p>
 <form method="post">
   {% csrf_token %}
-  <button type="submit" class="btn btn-danger">Da, obriši</button>
-  <a href="{% url 'main:match-detail' object.pk %}" class="btn btn-secondary"
-    >Odustani</a
-  >
+  <button class="btn btn-danger" type="submit">Obriši</button>
+  <a class="btn btn-secondary" href="{% url 'main:match-list' %}">Odustani</a>
 </form>
 {% endblock %}

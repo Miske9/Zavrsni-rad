@@ -1,0 +1,33 @@
+<!-- templates/club/match_list.html -->
+{% extends "main/base.html" %} {% block content %}
+<h1>Popis utakmica</h1>
+
+<table border="1">
+  <thead>
+    <tr>
+      <th>Datum</th>
+      <th>Protivnik</th>
+      <th>Lokacija</th>
+      <th>Kategorija</th>
+      <th>Akcije</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for match in matches %}
+    <tr>
+      <td>{{ match.date }}</td>
+      <td>{{ match.opponent }}</td>
+      <td>{{ match.location }}</td>
+      <td>{{ match.category.name }}</td>
+      <td>
+        <a href="{% url 'main:match_detail' match.pk %}">Detalji</a> |
+        <a href="{% url 'main:match_edit' match.pk %}">Uredi</a> |
+        <a href="{% url 'main:match_delete' match.pk %}">Obriši</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{% url 'main:match_add' %}">Dodaj novu utakmicu</a>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% extends 'main/base.html' %} {% block title %}Detalji igrača{% endblock %}
+{%block content %}
+<h2>{{ player.first_name }} {{ player.last_name }}</h2>
+<ul class="list-group">
+  <li class="list-group-item">
+    <strong>Datum rođenja:</strong> {{ player.date_of_birth }}
+  </li>
+  <li class="list-group-item">
+    <strong>Pozicija:</strong> {{ player.position }}
+  </li>
+  <li class="list-group-item">
+    <strong>Kategorija:</strong> {{ player.category }}
+  </li>
+  <li class="list-group-item"><strong>Golovi:</strong> {{ player.goals }}</li>
+  <li class="list-group-item">
+    <strong>Asistencije:</strong> {{ player.assists }}
+  </li>
+  <li class="list-group-item">
+    <strong>Žuti kartoni:</strong> {{ player.yellow_cards }}
+  </li>
+  <li class="list-group-item">
+    <strong>Crveni kartoni:</strong> {{ player.red_cards }}
+  </li>
+  <li class="list-group-item">
+    <strong>Nastupi:</strong> {{ player.appearances }}
+  </li>
+</ul>
+<a class="btn btn-primary mt-3" href="{% url 'main:player_update' player.id %}"
+  >Uredi</a
+>
+<a class="btn btn-danger mt-3" href="{% url 'main:player_delete' player.id %}"
+  >Obriši</a
+>
+{% endblock %}

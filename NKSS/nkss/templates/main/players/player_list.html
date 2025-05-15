@@ -1,0 +1,55 @@
+{% extends 'main/base.html' %} {% block title %}Popis igrača{% endblock %}
+{%block content %}
+<h2>Igrači</h2>
+<a class="btn btn-success mb-2" href="{% url 'main:player_create' %}"
+  >Dodaj novog igrača</a
+>
+<form method="get" class="mb-3">
+    <input type="text" name="first_name" placeholder="Ime" value="{{ filter_values.first_name|default_if_none:'' }}">
+    <input type="text" name="last_name" placeholder="Prezime" value="{{ filter_values.last_name|default_if_none:'' }}">    
+    <input type="date" name="date_of_birth" value="{{ filter_values.date_of_birth }}">
+    
+    <select name="category">
+        <option value=""> Kategorije </option>
+        {% for code, label in categories %}
+            <option value="{{ code }}" {% if filter_values.category == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <select name="position">
+        <option value=""> Pozicije </option>
+        {% for code, label in positions %}
+            <option value="{{ code }}" {% if filter_values.position == code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filtriraj</button>
+</form>
+
+
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Ime</th>
+      <th>Prezime</th>
+      <th>Datum rođenja</th>
+      <th>Pozicija</th>
+      <th>Kategorija</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for player in players %}
+    <tr>
+      <td>
+        <a href="{% url 'main:player_detail' player.id %}"
+          >{{ player.first_name }}</a>
+      </td>
+      <td>{{ player.last_name }}</td>
+      <td>{{ player.date_of_birth }}</td>
+      <td>{{ player.position }}</td>
+      <td>{{ player.category }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,25 @@
+{% extends "main/base.html" %} {% block content %}
+<h2>Dodaj statistiku za utakmicu: {{ match }}</h2>
+
+<form method="post">
+  {% csrf_token %}
+  <h3>Strijelci:</h3>
+  {% for player in players %}
+  <label>
+    <input type="checkbox" name="scorers" value="{{ player.id }}" />
+    {{ player }} </label
+  ><br />
+  {% endfor %}
+
+  <h3>Asistenti:</h3>
+  {% for player in players %}
+  <label>
+    <input type="checkbox" name="assistants" value="{{ player.id }}" />
+    {{ player }} </label
+  ><br />
+  {% endfor %}
+
+  <button type="submit">Spremi statistiku</button>
+</form>
+<a href="{% url 'main:match_detail' match.id %}">Natrag</a>
+{% endblock %}

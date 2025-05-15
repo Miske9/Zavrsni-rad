@@ -1,0 +1,15 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Sportska oprema</h2>
+<table>
+  <tr>
+    <th>Vrsta</th>
+    <th>Količina</th>
+  </tr>
+  {% for item in equipment %}
+  <tr>
+    <td>{{ item.name }}</td>
+    <td>{{ item.quantity }}</td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

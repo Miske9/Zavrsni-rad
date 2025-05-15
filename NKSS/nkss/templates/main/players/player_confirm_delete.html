@@ -1,0 +1,12 @@
+{% extends 'main/base.html' %} {% block title %}Brisanje igrača{% endblock %}
+{%block content %}
+<h2>
+  Jeste li sigurni da želite obrisati igrača: {{ player.first_name }} {{
+  player.last_name }}?
+</h2>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">Obriši</button>
+  <a class="btn btn-secondary" href="{% url 'main:player_list' %}">Odustani</a>
+</form>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'main/base.html' %} {% block title %}Brisanje utakmice{% endblock %}
+{% block content %}
+<h2>
+  Jeste li sigurni da želite obrisati utakmicu protiv {{ match.opponent }}?
+</h2>
+<form method="post">
+  {% csrf_token %}
+  <button class="btn btn-danger" type="submit">Obriši</button>
+  <a class="btn btn-secondary" href="{% url 'main:match_list' %}">Odustani</a>
+</form>
+{% endblock %}

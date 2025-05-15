@@ -1,0 +1,27 @@
+{% extends 'main/base.html' %} {% block title %}Forma za utakmicu{% endblock %}
+{% block content %}
+<h2>
+  {% if form.instance.pk %}Uredi utakmicu{% else %}Dodaj utakmicu{% endif %}
+</h2>
+<form method="get" action=".">
+    <label for="category">Kategorija:</label>
+    <select name="category" id="category" onchange="this.form.submit()">
+        <option value="">-- Odaberi kategoriju --</option>
+        {% for cat in categories %}
+            <option value="{{ cat.id }}" {% if selected_category|default:'' == cat.id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.name }}
+            </option>
+        {% endfor %}
+    </select>
+</form>
+<form method="get">
+  {{ form.category.label_tag }} {{ form.category }}
+  <button type="submit">Filtriraj igrače</button>
+</form>
+
+<form method="post">
+  {% csrf_token %} {{ form.as_p }}
+  <button type="submit">Spremi utakmicu</button>
+</form>
+
+{% endblock %}

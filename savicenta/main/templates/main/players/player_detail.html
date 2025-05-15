@@ -1,13 +1,51 @@
-{% extends "main/base.html" %} {% block content %}
-<h2>{{ object.ime }} {{ object.prezime }}</h2>
-<p>Pozicija: {{ object.get_pozicija_display }}</p>
-<p>Kategorija: {{ object.get_kategorija_display }}</p>
-<p>Datum rođenja: {{ object.datum_rodenja }}</p>
-<p>Broj dresa: {{ object.broj_dresa }}</p>
-<p>Golovi: {{ object.golovi }}</p>
-<p>Asistencije: {{ object.asistencije }}</p>
+{% extends 'main/base.html' %} {% block content %}
+<h1>{{ object.ime }} {{ object.prezime }}</h1>
+<p><strong>Datum rođenja:</strong> {{ object.datum_rodenja }}</p>
+<p><strong>Pozicija:</strong> {{ object.get_pozicija_display }}</p>
+<p><strong>Broj dresa:</strong> {{ object.broj_dresa }}</p>
+<p><strong>Kategorija:</strong> {{ object.get_kategorija_display }}</p>
 
-<a href="{% url 'main:player-update' object.pk %}">Uredi</a> |
-<a href="{% url 'main:player-delete' object.pk %}">Obriši</a> |
-<a href="{% url 'main:player-list' %}">Natrag</a>
+<h3>Statistike po utakmicama</h3>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <th>Datum</th>
+      <th>Protivnik</th>
+      <th>Golovi</th>
+      <th>Asistencije</th>
+      <th>Minute</th>
+      <th>Žuti kartoni</th>
+      <th>Crveni kartoni</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for stat in statistics %}
+    <tr>
+      <td>{{ stat.utakmica.datum }}</td>
+      <td>{{ stat.utakmica.protivnik }}</td>
+      <td>{{ stat.golovi }}</td>
+      <td>{{ stat.asistencije }}</td>
+      <td>{{ stat.minute }}</td>
+      <td>{{ stat.zuti_kartoni }}</td>
+      <td>{{ stat.crveni_kartoni }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h4>Ukupno</h4>
+<ul>
+  <li>Golovi: {{ ukupno.golovi }}</li>
+  <li>Asistencije: {{ ukupno.asistencije }}</li>
+  <li>Minute: {{ ukupno.minute }}</li>
+  <li>Žuti kartoni: {{ ukupno.zuti }}</li>
+  <li>Crveni kartoni: {{ ukupno.crveni }}</li>
+</ul>
+
+<a href="{% url 'main:player-update' object.pk %}" class="btn btn-primary"
+  >Uredi</a
+>
+<a href="{% url 'main:player-delete' object.pk %}" class="btn btn-danger"
+  >Izbriši</a
+>
 {% endblock %}

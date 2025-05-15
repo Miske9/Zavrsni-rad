@@ -1,0 +1,8 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Zapisnici sastanaka</h2>
+<ul>
+  {% for meeting in meetings %}
+  <li>{{ meeting.date }} – {{ meeting.notes|linebreaks }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

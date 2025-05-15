@@ -1,0 +1,88 @@
+{% extends 'main/base.html' %} {% block content %}
+<div class="container mt-4">
+  <h2>Detalji utakmice</h2>
+  <p><strong>Protivnik:</strong> {{ match.opponent }}</p>
+  <p><strong>Datum:</strong> {{ match.date }}</p>
+  <p>
+    <strong>Rezultat:</strong> {{ match.home_score }} : {{ match.away_score }}
+  </p>
+
+  <h4>Početnih 11:</h4>
+  <ul>
+    {% for player in match.starting_players.all %}
+    <li>{{ player.first_name }} {{ player.last_name }}</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Rezerve:</h4>
+  <ul>
+    {% for player in match.bench_players.all %}
+    <li>{{ player.first_name }} {{ player.last_name }}</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Kapetan:</h4>
+  <p>{{ match.captain.first_name }} {{ match.captain.last_name }}</p>
+
+  <h4>Golman:</h4>
+  <p>{{ match.goalkeeper.first_name }} {{ match.goalkeeper.last_name }}</p>
+
+  <hr />
+
+  <h3>Dodaj gol</h3>
+  <form method="post" action="{% url 'main:add_goal' match.id %}">
+    {% csrf_token %} {{ goal_form.as_p }}
+    <button type="submit" class="btn btn-success">Dodaj gol</button>
+  </form>
+
+  <h3 class="mt-4">Dodaj asistenciju</h3>
+  <form method="post" action="{% url 'main:add_assist' match.id %}">
+    {% csrf_token %} {{ assist_form.as_p }}
+    <button type="submit" class="btn btn-primary">Dodaj asistenciju</button>
+  </form>
+
+  <h3 class="mt-4">Dodaj karton</h3>
+  <form method="post" action="{% url 'main:add_card' match.id %}">
+    {% csrf_token %} {{ card_form.as_p }}
+    <button type="submit" class="btn btn-warning">Dodaj karton</button>
+  </form>
+
+  <hr />
+
+  <h4>Golovi:</h4>
+  <ul>
+    {% for goal in match.goals.all %}
+    <li>
+      {{ goal.player.first_name }} {{ goal.player.last_name }} - {{ goal.minute
+      }}'
+    </li>
+    {% empty %}
+    <li>Nema golova.</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Asistencije:</h4>
+  <ul>
+    {% for assist in match.assists.all %}
+    <li>
+      {{ assist.player.first_name }} {{ assist.player.last_name }} - {{
+      assist.minute }}'
+    </li>
+    {% empty %}
+    <li>Nema asistencija.</li>
+    {% endfor %}
+  </ul>
+
+  <h4>Kartoni:</h4>
+  <ul>
+    {% for card in match.cards.all %}
+    <li>
+      {{ card.get_card_type_display }} - {{ card.player.first_name }} {{
+      card.player.last_name }} - {{ card.minute }}'
+    </li>
+    {% empty %}
+    <li>Nema kartona.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

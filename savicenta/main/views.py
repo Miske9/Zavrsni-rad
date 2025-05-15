@@ -1,8 +1,12 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
-from django.urls import reverse, reverse_lazy
+from django.urls import reverse_lazy
 from .models import Player, Match, Statistics, StaffMember, Meeting, Equipment
-from django.views.generic import TemplateView
+from django.forms import ModelForm, ModelMultipleChoiceField, CheckboxSelectMultiple, ValidationError
+from django import forms
+from django.db.models import Sum
+
+# INDEX
 
 def index(request):
     return render(request, 'main/index.html')
@@ -15,6 +19,21 @@ class PlayerListView(ListView):
 class PlayerDetailView(DetailView):
     model = Player
     template_name = 'main/players/player_detail.html'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        player = self.object
+        stats = Statistics.objects.filter(igrac=player).select_related('utakmica')
+        total_stats = stats.aggregate(
+            ukupno_golova=Sum('golovi'),
+            ukupno_asistencija=Sum('asistencije'),
+            ukupno_zuti=Sum('zuti_kartoni'),
+            ukupno_crveni=Sum('crveni_kartoni'),
+            ukupno_minute=Sum('minute')
+        )
+        context['stats'] = stats
+        context['total_stats'] = total_stats
+        return context
 
 class PlayerCreateView(CreateView):
     model = Player
@@ -33,6 +52,31 @@ class PlayerDeleteView(DeleteView):
     template_name = 'main/players/player_confirm_delete.html'
     success_url = reverse_lazy('main:player-list')
 
+# MATCH FORM
+class MatchForm(ModelForm):
+    igraci = ModelMultipleChoiceField(
+        queryset=Player.objects.all(),
+        widget=CheckboxSelectMultiple,
+        required=True
+    )
+    kapetan = forms.ModelChoiceField(queryset=Player.objects.all(), required=True)
+
+    class Meta:
+        model = Match
+        fields = ['datum', 'protivnik', 'lokacija', 'rezultat', 'opis', 'trener', 'fizioterapeut', 'predstavnik_kluba', 'igraci', 'kapetan']
+
+    def clean(self):
+        cleaned_data = super().clean()
+        igraci = cleaned_data.get('igraci')
+        kapetan = cleaned_data.get('kapetan')
+        if igraci:
+            if len(igraci) < 11:
+                raise ValidationError("Minimalno 11 igrača mora biti odabrano.")
+            if len(igraci) > 18:
+                raise ValidationError("Maksimalno 18 igrača može biti odabrano.")
+            if kapetan and kapetan not in igraci:
+                raise ValidationError("Kapetan mora biti jedan od odabranih igrača.")
+        return cleaned_data
 
 # MATCH
 class MatchListView(ListView):
@@ -45,13 +89,13 @@ class MatchDetailView(DetailView):
 
 class MatchCreateView(CreateView):
     model = Match
-    fields = '__all__'
+    form_class = MatchForm
     template_name = 'main/matches/match_form.html'
     success_url = reverse_lazy('main:match-list')
 
 class MatchUpdateView(UpdateView):
     model = Match
-    fields = '__all__'
+    form_class = MatchForm
     template_name = 'main/matches/match_form.html'
     success_url = reverse_lazy('main:match-list')
 
@@ -60,35 +104,25 @@ class MatchDeleteView(DeleteView):
     template_name = 'main/matches/match_confirm_delete.html'
     success_url = reverse_lazy('main:match-list')
 
-
-# STATISTICS
-class StatisticsListView(ListView):
-    model = Statistics
-    template_name = 'main/statistics/statistics_list.html'
-
-class StatisticsDetailView(DetailView):
-    model = Statistics
-    template_name = 'main/statistics/statistics_detail.html'
-
+# STATISTICS - za dodavanje statistike po utakmici
 class StatisticsCreateView(CreateView):
     model = Statistics
     fields = '__all__'
     template_name = 'main/statistics/statistics_form.html'
-    success_url = reverse_lazy('main:statistics-list')
+    success_url = reverse_lazy('main:match-list')
 
 class StatisticsUpdateView(UpdateView):
     model = Statistics
     fields = '__all__'
     template_name = 'main/statistics/statistics_form.html'
-    success_url = reverse_lazy('main:statistics-list')
+    success_url = reverse_lazy('main:match-list')
 
 class StatisticsDeleteView(DeleteView):
     model = Statistics
     template_name = 'main/statistics/statistics_confirm_delete.html'
-    success_url = reverse_lazy('main:statistics-list')
+    success_url = reverse_lazy('main:match-list')
 
-
-# STAFF MEMBER
+# STAFF
 class StaffListView(ListView):
     model = StaffMember
     template_name = 'main/staff/staff_list.html'
@@ -113,7 +147,6 @@ class StaffDeleteView(DeleteView):
     model = StaffMember
     template_name = 'main/staff/staff_confirm_delete.html'
     success_url = reverse_lazy('main:staff-list')
-
 
 # MEETING
 class MeetingListView(ListView):
@@ -140,7 +173,6 @@ class MeetingDeleteView(DeleteView):
     model = Meeting
     template_name = 'main/meetings/meeting_confirm_delete.html'
     success_url = reverse_lazy('main:meeting-list')
-
 
 # EQUIPMENT
 class EquipmentListView(ListView):

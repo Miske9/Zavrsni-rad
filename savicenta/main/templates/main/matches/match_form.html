@@ -1,8 +1,8 @@
 {% extends 'main/base.html' %} {% block content %}
-<h2>{{ view.title }}</h2>
+<h2>{% if object %}Uredi{% else %}Dodaj{% endif %} utakmicu</h2>
 <form method="post">
   {% csrf_token %} {{ form.as_p }}
-  <button type="submit" class="btn btn-success">Spremi</button>
-  <a href="{{ view.cancel_url }}" class="btn btn-secondary">Odustani</a>
+  <button class="btn btn-success" type="submit">Spremi</button>
+  <a class="btn btn-secondary" href="{% url 'main:match-list' %}">Odustani</a>
 </form>
 {% endblock %}

@@ -1,5 +1,5 @@
-
 from django.db import models
+from django.core.exceptions import ValidationError
 
 class Player(models.Model):
     POSITION_CHOICES = [
@@ -20,11 +20,22 @@ class Player(models.Model):
     pozicija = models.CharField(max_length=2, choices=POSITION_CHOICES)
     broj_dresa = models.IntegerField()
     kategorija = models.CharField(max_length=20, choices=CATEGORY_CHOICES)
-    golovi = models.IntegerField(default=0)
-    asistencije = models.IntegerField(default=0)
 
     def __str__(self):
         return f"{self.ime} {self.prezime}"
+
+class StaffMember(models.Model):
+    FUNKCIJE = [
+        ('trener', 'Trener'),
+        ('fizioterapeut', 'Fizioterapeut'),
+        ('predstavnik', 'Predstavnik Kluba'),
+    ]
+    ime = models.CharField(max_length=100)
+    funkcija = models.CharField(max_length=50, choices=FUNKCIJE)
+    kontakt = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.funkcija.title()}: {self.ime}"
 
 class Match(models.Model):
     datum = models.DateField()
@@ -32,6 +43,25 @@ class Match(models.Model):
     lokacija = models.CharField(max_length=100)
     rezultat = models.CharField(max_length=20)
     opis = models.TextField(blank=True)
+    igraci = models.ManyToManyField(Player, through='Statistics')
+    kapetan = models.ForeignKey(Player, related_name='kapetan_utakmice', on_delete=models.SET_NULL, null=True)
+    trener = models.ForeignKey(StaffMember, related_name='trener_utakmice', on_delete=models.SET_NULL, null=True, limit_choices_to={'funkcija': 'trener'})
+    fizioterapeut = models.ForeignKey(StaffMember, related_name='fizio_utakmice', on_delete=models.SET_NULL, null=True, limit_choices_to={'funkcija': 'fizioterapeut'})
+    predstavnik_kluba = models.ForeignKey(
+        StaffMember,
+        related_name='utakmice_kao_predstavnik',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name="Predstavnik kluba"
+)
+
+    def clean(self):
+        if self.kapetan and not Statistics.objects.filter(utakmica=self, igrac=self.kapetan).exists():
+            raise ValidationError("Kapetan mora biti među odabranim igračima za utakmicu.")
+
+    def __str__(self):
+        return f"{self.datum} - {self.protivnik}"
 
 class Statistics(models.Model):
     igrac = models.ForeignKey(Player, on_delete=models.CASCADE)
@@ -42,10 +72,8 @@ class Statistics(models.Model):
     zuti_kartoni = models.IntegerField(default=0)
     crveni_kartoni = models.IntegerField(default=0)
 
-class StaffMember(models.Model):
-    ime = models.CharField(max_length=100)
-    funkcija = models.CharField(max_length=100)
-    kontakt = models.CharField(max_length=100)
+    class Meta:
+        unique_together = ('igrac', 'utakmica')
 
 class Meeting(models.Model):
     datum = models.DateField()

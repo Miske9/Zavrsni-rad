@@ -1,0 +1,53 @@
+{% extends 'main/base.html' %} {% block content %}
+<h2>Igrači</h2>
+<form method="get">
+  <input type="text" name="search" placeholder="Pretraga" />
+  <select name="category">
+    <option value="">Sve kategorije</option>
+    {% for cat in categories %}
+    <option value="{{ cat }}">{{ cat }}</option>
+    {% endfor %}
+  </select>
+  <select name="position">
+    <option value="">Sve pozicije</option>
+    <option value="GK" {% if request.GET.position == 'GK' %}selected{% endif %}>Golman</option>
+    <option value="DF" {% if request.GET.position == 'DF' %}selected{% endif %}>Branič</option>
+    <option value="MF" {% if request.GET.position == 'MF' %}selected{% endif %}>Vezni</option>
+    <option value="FW" {% if request.GET.position == 'FW' %}selected{% endif %}>Napadač</option>
+  </select>
+
+  <select name="sort">
+    <option value="">Sortiraj po</option>
+    <option value="first_name" {% if request.GET.sort == 'first_name' %}selected{% endif %}>Ime</option>
+    <option value="last_name" {% if request.GET.sort == 'last_name' %}selected{% endif %}>Prezime</option>
+    <option value="position" {% if request.GET.sort == 'position' %}selected{% endif %}>Pozicija</option>
+    <option value="date_of_birth" {% if request.GET.sort == 'date_of_birth' %}selected{% endif %}>Starost</option>
+  </select>
+  <button type="submit">Filtriraj</button>
+</form>
+<table>
+  <tr>
+    <th>Ime</th>
+    <th>Pozicija</th>
+    <th>Kategorija</th>
+    <th>Golovi</th>
+    <th>Asistencije</th>
+  </tr>
+  {% for player in players %}
+  <tr>
+    <td>
+      <a href="{% url 'main:player_detail' player.pk %}"
+        >{{ player.first_name }} {{ player.last_name }}</a
+      >
+    </td>
+    <td>{{ player.get_position_display }}</td>
+    <td>{{ player.category }}</td>
+    <td>{{ player.goals }}</td>
+    <td>{{ player.assists }}</td>
+  </tr>
+  {% endfor %}
+</table>
+<button>
+  <a href="{% url 'main:player_add' %}">Dodaj novog igrača</a>
+</button>
+{% endblock %}

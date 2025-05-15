@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}NK Smoljanci Sloboda{% endblock %}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="{% url 'main:index' %}">NK Smoljanci</a>
+        <div class="collapse navbar-collapse">
+          <ul class="navbar-nav me-auto">
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'main:player_list' %}">Igrači</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="{% url 'main:match_list' %}"
+                >Utakmice</a
+              >
+            </li>
+            <!-- Dodaj ostale linkove po potrebi -->
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">{% block content %}{% endblock %}</div>
+  </body>
+</html>
