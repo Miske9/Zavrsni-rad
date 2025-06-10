@@ -1,10 +1,9 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Player, Match, MatchEvent, Goal, Assist, Card, CATEGORIES, POSITIONS, StaffMember, Meeting, Equipment
-from .forms import AssistForm, CardForm, GoalForm, PlayerForm, MatchForm, MatchEventForm, StaffMemberForm, MeetingForm, EquipmentForm
+from .models import *
+from .forms import *
 
 def index(request):
     return render(request, 'main/index.html')
-# Player Views
 def player_list(request):
     players = Player.objects.all().order_by('category', 'last_name')
 
@@ -70,7 +69,6 @@ def player_delete(request, pk):
         return redirect('main:player_list')
     return render(request, 'main/players/player_confirm_delete.html', {'player': player})
 
-# Match Views
 def match_list(request):
     matches = Match.objects.all().order_by('-date')
 
@@ -118,7 +116,7 @@ def match_create(request):
                 player.save()
             return redirect("main:match_list")
     else:
-        form = MatchForm(request.GET or None)  # Omogućuje učitavanje kategorije iz GET-a
+        form = MatchForm(request.GET or None)  
     return render(request, "main/matches/match_form.html", {"form": form})
 
 

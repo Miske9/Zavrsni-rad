@@ -60,14 +60,4 @@
     cursor: pointer;
   }
 </style>
-
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    document.querySelectorAll(".table-row-clickable").forEach((row) => {
-      row.addEventListener("click", () => {
-        window.location.href = row.dataset.href;
-      });
-    });
-  });
-</script>
 {% endblock %}

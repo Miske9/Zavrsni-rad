@@ -92,7 +92,7 @@ class StaffMember(models.Model):
 
     name = models.CharField(max_length=100)
     role = models.CharField(max_length=1, choices=ROLE_TYPES)
-    position = models.CharField(max_length=100, blank=True)  # npr. "Predsjednik", "Pomoćni trener"
+    position = models.CharField(max_length=100, blank=True)  
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     active = models.BooleanField(default=True)

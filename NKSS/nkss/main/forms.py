@@ -1,5 +1,5 @@
 from django import forms
-from .models import Player, Match, MatchEvent, Goal, Assist, Card, StaffMember, Meeting, Equipment
+from .models import *
 from django.core.exceptions import ValidationError
 
 class PlayerForm(forms.ModelForm):
@@ -34,7 +34,6 @@ class MatchForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(MatchForm, self).__init__(*args, **kwargs)
 
-        # Ako postoji instanca i kategorija je definirana
         category = None
 
         if self.instance and self.instance.category:

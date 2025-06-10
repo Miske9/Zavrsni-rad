@@ -3,7 +3,6 @@
 {% block content %}
 <div class="container my-4">
 
-  <!-- Filter kategorije -->
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
       <form method="get" action="" id="category-filter" class="row g-3 align-items-end">
@@ -25,7 +24,6 @@
     </div>
   </div>
 
-  <!-- Glavna forma -->
   <div class="card shadow border-0">
     <div class="card-header bg-primary text-white">
       <h3 class="mb-0">{% if form.instance.pk %}✏️ Uredi utakmicu{% else %}➕ Dodaj utakmicu{% endif %}</h3>
@@ -34,7 +32,6 @@
       <form method="post" id="match-form" class="row g-4">
         {% csrf_token %}
 
-        <!-- Basic info -->
         <div class="col-12">
           <h5 class="border-bottom pb-2 mb-3">Osnovni podaci</h5>
         </div>
@@ -54,7 +51,6 @@
           {{ form.away_score.label_tag }} {{ form.away_score }}
         </div>
 
-        <!-- Player selection -->
         <div class="col-12 pt-3">
           <h5 class="border-bottom pb-2 mb-3">Igrači</h5>
         </div>
