@@ -1,27 +1,96 @@
-{% extends 'main/base.html' %} {% block title %}Forma za utakmicu{% endblock %}
+{% extends 'main/base.html' %}
+{% block title %}{% if form.instance.pk %}Uredi utakmicu{% else %}Dodaj utakmicu{% endif %}{% endblock %}
 {% block content %}
-<h2>
-  {% if form.instance.pk %}Uredi utakmicu{% else %}Dodaj utakmicu{% endif %}
-</h2>
-<form method="get" action=".">
-    <label for="category">Kategorija:</label>
-    <select name="category" id="category" onchange="this.form.submit()">
-        <option value="">-- Odaberi kategoriju --</option>
-        {% for cat in categories %}
-            <option value="{{ cat.id }}" {% if selected_category|default:'' == cat.id|stringformat:"s" %}selected{% endif %}>
-                {{ cat.name }}
-            </option>
-        {% endfor %}
-    </select>
-</form>
-<form method="get">
-  {{ form.category.label_tag }} {{ form.category }}
-  <button type="submit">Filtriraj igrače</button>
-</form>
+<div class="container my-4">
 
-<form method="post">
-  {% csrf_token %} {{ form.as_p }}
-  <button type="submit">Spremi utakmicu</button>
-</form>
+  <!-- Filter kategorije -->
+  <div class="card shadow-sm border-0 mb-4">
+    <div class="card-body">
+      <form method="get" action="" id="category-filter" class="row g-3 align-items-end">
+        <div class="col-md-8 col-lg-10">
+          <label for="id_category" class="form-label fw-semibold">Kategorija:</label>
+          <select name="category" id="id_category" class="form-select" onchange="this.form.submit()">
+            <option value="">-- Odaberi kategoriju --</option>
+            {% for value, name in form.fields.category.choices %}
+              <option value="{{ value }}" {% if form.category.value == value|stringformat:"s" %}selected{% endif %}>
+                {{ name }}
+              </option>
+            {% endfor %}
+          </select>                           
+        </div>
+        <div class="col-md-4 col-lg-2 d-grid">
+          <button type="submit" class="btn btn-outline-primary">Filtriraj</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
+  <!-- Glavna forma -->
+  <div class="card shadow border-0">
+    <div class="card-header bg-primary text-white">
+      <h3 class="mb-0">{% if form.instance.pk %}✏️ Uredi utakmicu{% else %}➕ Dodaj utakmicu{% endif %}</h3>
+    </div>
+    <div class="card-body">
+      <form method="post" id="match-form" class="row g-4">
+        {% csrf_token %}
+
+        <!-- Basic info -->
+        <div class="col-12">
+          <h5 class="border-bottom pb-2 mb-3">Osnovni podaci</h5>
+        </div>
+        <div class="col-md-4">
+          {{ form.date.label_tag }} {{ form.date }}
+        </div>
+        <div class="col-md-4">
+          {{ form.home_or_away.label_tag }} {{ form.home_or_away }}
+        </div>
+        <div class="col-md-4">
+          {{ form.opponent.label_tag }} {{ form.opponent }}
+        </div>
+        <div class="col-md-4">
+          {{ form.home_score.label_tag }} {{ form.home_score }}
+        </div>
+        <div class="col-md-4">
+          {{ form.away_score.label_tag }} {{ form.away_score }}
+        </div>
+
+        <!-- Player selection -->
+        <div class="col-12 pt-3">
+          <h5 class="border-bottom pb-2 mb-3">Igrači</h5>
+        </div>
+        <div class="col-12">
+          {{ form.starting_players.label_tag }}
+          <div class="player-select">
+            {{ form.starting_players }}
+          </div>
+        </div>
+        <div class="col-12">
+          {{ form.bench_players.label_tag }}
+          <div class="player-select">
+            {{ form.bench_players }}
+          </div>
+        </div>
+        <div class="col-md-6">
+          {{ form.captain.label_tag }} {{ form.captain }}
+        </div>
+        <div class="col-md-6">
+          {{ form.goalkeeper.label_tag }} {{ form.goalkeeper }}
+        </div>
+
+        <div class="col-12 d-flex justify-content-end gap-2">
+          <a href="{% url 'main:match_list' %}" class="btn btn-outline-secondary">Odustani</a>
+          <button type="submit" class="btn btn-success">💾 Spremi utakmicu</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+  .player-select {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 8px;
+  }
+</style>
 {% endblock %}

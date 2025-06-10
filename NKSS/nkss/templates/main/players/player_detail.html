@@ -1,34 +1,52 @@
 {% extends 'main/base.html' %} {% block title %}Detalji igrača{% endblock %}
 {%block content %}
-<h2>{{ player.first_name }} {{ player.last_name }}</h2>
-<ul class="list-group">
-  <li class="list-group-item">
-    <strong>Datum rođenja:</strong> {{ player.date_of_birth }}
-  </li>
-  <li class="list-group-item">
-    <strong>Pozicija:</strong> {{ player.position }}
-  </li>
-  <li class="list-group-item">
-    <strong>Kategorija:</strong> {{ player.category }}
-  </li>
-  <li class="list-group-item"><strong>Golovi:</strong> {{ player.goals }}</li>
-  <li class="list-group-item">
-    <strong>Asistencije:</strong> {{ player.assists }}
-  </li>
-  <li class="list-group-item">
-    <strong>Žuti kartoni:</strong> {{ player.yellow_cards }}
-  </li>
-  <li class="list-group-item">
-    <strong>Crveni kartoni:</strong> {{ player.red_cards }}
-  </li>
-  <li class="list-group-item">
-    <strong>Nastupi:</strong> {{ player.appearances }}
-  </li>
-</ul>
-<a class="btn btn-primary mt-3" href="{% url 'main:player_update' player.id %}"
-  >Uredi</a
->
-<a class="btn btn-danger mt-3" href="{% url 'main:player_delete' player.id %}"
-  >Obriši</a
->
+<div class="container my-4">
+  <div class="card shadow border-0">
+    <div class="card-header bg-primary text-white">
+      <h3 class="mb-0">👤 {{ player.first_name }} {{ player.last_name }}</h3>
+    </div>
+
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item">
+        <strong>📅 Datum rođenja:</strong> {{ player.date_of_birth }}
+      </li>
+      <li class="list-group-item">
+        <strong>🏅 Pozicija:</strong> {{ player.position }}
+      </li>
+      <li class="list-group-item">
+        <strong>📘 Kategorija:</strong> {{ player.category }}
+      </li>
+      <li class="list-group-item">
+        <strong>⚽ Golovi:</strong> {{ player.goals }}
+      </li>
+      <li class="list-group-item">
+        <strong>🎯 Asistencije:</strong> {{ player.assists }}
+      </li>
+      <li class="list-group-item">
+        <strong>🟨 Žuti kartoni:</strong> {{ player.yellow_cards }}
+      </li>
+      <li class="list-group-item">
+        <strong>🟥 Crveni kartoni:</strong> {{ player.red_cards }}
+      </li>
+      <li class="list-group-item">
+        <strong>📈 Nastupi:</strong> {{ player.appearances }}
+      </li>
+    </ul>
+
+    <div class="card-body d-flex gap-2">
+      <a
+        class="btn btn-outline-primary w-100 shadow-sm"
+        href="{% url 'main:player_update' player.id %}"
+      >
+        ✏️ Uredi
+      </a>
+      <a
+        class="btn btn-outline-danger w-100 shadow-sm"
+        href="{% url 'main:player_delete' player.id %}"
+      >
+        🗑️ Obriši
+      </a>
+    </div>
+  </div>
+</div>
 {% endblock %}

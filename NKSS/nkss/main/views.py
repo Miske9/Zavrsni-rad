@@ -1,6 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from .models import Player, Match, MatchEvent, Goal, Assist, Card, CATEGORIES, POSITIONS
-from .forms import AssistForm, CardForm, GoalForm, PlayerForm, MatchForm, MatchEventForm
+from .models import Player, Match, MatchEvent, Goal, Assist, Card, CATEGORIES, POSITIONS, StaffMember, Meeting, Equipment
+from .forms import AssistForm, CardForm, GoalForm, PlayerForm, MatchForm, MatchEventForm, StaffMemberForm, MeetingForm, EquipmentForm
 
 def index(request):
     return render(request, 'main/index.html')
@@ -104,9 +104,9 @@ def match_detail(request, pk):
     else:
         form = MatchEventForm()
         form.fields['player'].queryset = match.starting_players.all() | match.bench_players.all()
-    return render(request, "main/matches/match_detail.html", {"match": match, "events": events, "form": form, 'goal_form': GoalForm,
-    'assist_form': AssistForm,
-    'card_form': CardForm,})
+    return render(request, "main/matches/match_detail.html", {"match": match, "events": events, "form": form, 'goal_form': GoalForm(),
+    'assist_form': AssistForm(),
+    'card_form': CardForm(),})
 
 def match_create(request):
     if request.method == "POST":
@@ -148,9 +148,9 @@ def add_goal(request, match_id):
         Goal.objects.create(match=match, player_id=player_id, minute=minute)
         player = Player.objects.get(id=player_id)
         player.goals += 1
-        player.appearances += 1
+        player.appearances += 0
         player.save()
-    return redirect('main:match_detail', pk=match_id)
+        return redirect('main:match_detail', pk=match_id)
 
 def add_assist(request, match_id):
     match = get_object_or_404(Match, pk=match_id)
@@ -160,7 +160,7 @@ def add_assist(request, match_id):
         Assist.objects.create(match=match, player_id=player_id, minute=minute)
         player = Player.objects.get(id=player_id)
         player.assists += 1
-        player.appearances += 1
+        player.appearances += 0
         player.save()
     return redirect('main:match_detail', pk=match_id)
 
@@ -176,6 +176,115 @@ def add_card(request, match_id):
             player.yellow_cards += 1
         elif card_type == 'R':
             player.red_cards += 1
-        player.appearances += 1
+        player.appearances += 0
         player.save()
     return redirect('main:match_detail', pk=match_id)
+
+
+def staffmember_list(request):
+    staffmembers = StaffMember.objects.all()
+    return render(request, 'main/staff/staffmember_list.html', {'staffmembers': staffmembers})
+
+def staffmember_detail(request, pk):
+    staffmember = get_object_or_404(StaffMember, pk=pk)
+    return render(request, 'main/staff/staffmember_detail.html', {'staffmember': staffmember})
+
+def staffmember_create(request):
+    if request.method == "POST":
+        form = StaffMemberForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('main:staffmember-list')
+    else:
+        form = StaffMemberForm()
+    return render(request, 'main/staff/staffmember_form.html', {'form': form})
+
+def staffmember_update(request, pk):
+    staffmember = get_object_or_404(StaffMember, pk=pk)
+    if request.method == "POST":
+        form = StaffMemberForm(request.POST, instance=staffmember)
+        if form.is_valid():
+            form.save()
+            return redirect('main:staffmember-list')
+    else:
+        form = StaffMemberForm(instance=staffmember)
+    return render(request, 'main/staff/staffmember_form.html', {'form': form})
+
+def staffmember_delete(request, pk):
+    staffmember = get_object_or_404(StaffMember, pk=pk)
+    if request.method == "POST":
+        staffmember.delete()
+        return redirect('main:staffmember-list')
+    return render(request, 'main/staff/staffmember_confirm_delete.html', {'staffmember': staffmember})
+
+def meeting_list(request):
+    meetings = Meeting.objects.all()
+    return render(request, 'main/meeting/meeting_list.html', {'meetings': meetings})
+
+def meeting_detail(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    return render(request, 'main/meeting/meeting_detail.html', {'meeting': meeting})
+
+def meeting_create(request):
+    if request.method == "POST":
+        form = MeetingForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('main:meeting-list')
+    else:
+        form = MeetingForm()
+    return render(request, 'main/meeting/meeting_form.html', {'form': form})
+
+def meeting_update(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    if request.method == "POST":
+        form = MeetingForm(request.POST, instance=meeting)
+        if form.is_valid():
+            form.save()
+            return redirect('main:meeting-list')
+    else:
+        form = MeetingForm(instance=meeting)
+    return render(request, 'main/meeting/meeting_form.html', {'form': form})
+
+def meeting_delete(request, pk):
+    meeting = get_object_or_404(Meeting, pk=pk)
+    if request.method == "POST":
+        meeting.delete()
+        return redirect('main:meeting-list')
+    return render(request, 'main/meeting/meeting_confirm_delete.html', {'meeting': meeting})
+
+def equipment_list(request):
+    equipment = Equipment.objects.all()
+    return render(request, 'main/equipment/equipment_list.html', {'equipment': equipment})
+
+def equipment_detail(request, pk):
+    equipment_item = get_object_or_404(Equipment, pk=pk)
+    return render(request, 'main/equipment/equipment_detail.html', {'equipment': equipment_item})
+
+def equipment_create(request):
+    if request.method == "POST":
+        form = EquipmentForm(request.POST)
+        if form.is_valid():
+            form.save()
+            return redirect('main:equipment-list')
+    else:
+        form = EquipmentForm()
+    return render(request, 'main/equipment/equipment_form.html', {'form': form})
+
+def equipment_update(request, pk):
+    equipment_item = get_object_or_404(Equipment, pk=pk)
+    if request.method == "POST":
+        form = EquipmentForm(request.POST, instance=equipment_item)
+        if form.is_valid():
+            form.save()
+            return redirect('main:equipment-list')
+    else:
+        form = EquipmentForm(instance=equipment_item)
+    return render(request, 'main/equipment/equipment_form.html', {'form': form})
+
+def equipment_delete(request, pk):
+    equipment_item = get_object_or_404(Equipment, pk=pk)
+    if request.method == "POST":
+        equipment_item.delete()
+        return redirect('main:equipment-list')
+    return render(request, 'main/equipment/equipment_confirm_delete.html', {'equipment_item': equipment_item})

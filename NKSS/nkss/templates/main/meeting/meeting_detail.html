@@ -1,0 +1,30 @@
+{% extends 'main/base.html' %} {% block title %}Detalji sastanka{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <div class="card shadow">
+    <div class="card-header bg-dark text-white">
+      <h4 class="mb-0">📅 Detalji sastanka</h4>
+    </div>
+    <div class="card-body">
+      <p><strong>Naslov:</strong> {{ meeting.title }}</p>
+      <p><strong>Datum:</strong> {{ meeting.date }}</p>
+      <p><strong>Bilješke:</strong></p>
+      <div class="border p-3 rounded bg-light">
+        {{ meeting.notes|linebreaks }}
+      </div>
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+      <a
+        href="{% url 'main:meeting_update' meeting.id %}"
+        class="btn btn-warning"
+        >✏️ Uredi</a
+      >
+      <a
+        href="{% url 'main:meeting_delete' meeting.id %}"
+        class="btn btn-danger"
+        >🗑️ Obriši</a
+      >
+    </div>
+  </div>
+</div>
+{% endblock %}

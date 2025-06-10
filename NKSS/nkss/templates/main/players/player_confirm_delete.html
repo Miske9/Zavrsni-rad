@@ -1,12 +1,25 @@
 {% extends 'main/base.html' %} {% block title %}Brisanje igrača{% endblock %}
 {%block content %}
-<h2>
-  Jeste li sigurni da želite obrisati igrača: {{ player.first_name }} {{
-  player.last_name }}?
-</h2>
-<form method="post">
-  {% csrf_token %}
-  <button class="btn btn-danger" type="submit">Obriši</button>
-  <a class="btn btn-secondary" href="{% url 'main:player_list' %}">Odustani</a>
-</form>
+<div class="container my-4">
+  <div class="card shadow border-0">
+    <div class="card-header bg-danger text-white">
+      <h3 class="mb-0">🗑️ Brisanje igrača</h3>
+    </div>
+    <div class="card-body">
+      <p class="fs-5">
+        Jeste li sigurni da želite obrisati igrača:
+        <span class="fw-bold"
+          >{{ player.first_name }} {{ player.last_name }}</span
+        >?
+      </p>
+      <form method="post" class="d-flex gap-3">
+        {% csrf_token %}
+        <button class="btn btn-danger shadow-sm" type="submit">Obriši</button>
+        <a class="btn btn-outline-secondary" href="{% url 'main:player_list' %}"
+          >Odustani</a
+        >
+      </form>
+    </div>
+  </div>
+</div>
 {% endblock %}

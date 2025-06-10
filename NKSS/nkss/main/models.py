@@ -83,17 +83,47 @@ class MatchEvent(models.Model):
         super().save(*args, **kwargs)
 
 class StaffMember(models.Model):
+    ROLE_TYPES = [
+        ("U", "Uprava"),
+        ("T", "Trener"),
+        ("F", "Fizioterapeut"),
+        ("O", "Ostalo"),
+    ]
+
     name = models.CharField(max_length=100)
-    role = models.CharField(max_length=100)
+    role = models.CharField(max_length=1, choices=ROLE_TYPES)
+    position = models.CharField(max_length=100, blank=True)  # npr. "Predsjednik", "Pomoćni trener"
+    email = models.EmailField(blank=True, null=True)
+    phone = models.CharField(max_length=20, blank=True, null=True)
+    active = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_role_display()})"
 
 class Meeting(models.Model):
     date = models.DateField()
+    title = models.CharField(max_length=200)
     notes = models.TextField()
+    attendees = models.ManyToManyField(StaffMember, related_name='meetings_attended')
+
+    def __str__(self):
+        return f"Sastanak: {self.title} ({self.date})"
 
 class Equipment(models.Model):
-    name = models.CharField(max_length=100)
-    quantity = models.PositiveIntegerField()
+    EQUIPMENT_TYPES = [
+        ("BALL", "Lopta"),
+        ("KIT", "Dres"),
+    ]
 
+    name = models.CharField(max_length=100)
+    type = models.CharField(max_length=4, choices=EQUIPMENT_TYPES)
+    quantity = models.PositiveIntegerField()
+    condition = models.CharField(max_length=50, default="Ispravno")
+    purchase_date = models.DateField(null=True, blank=True)
+    description = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"{self.get_type_display()} - {self.name} ({self.quantity})"
 
 class Goal(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='goals')

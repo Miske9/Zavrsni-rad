@@ -1,88 +1,221 @@
-{% extends 'main/base.html' %} {% block content %}
-<div class="container mt-4">
-  <h2>Detalji utakmice</h2>
-  <p><strong>Protivnik:</strong> {{ match.opponent }}</p>
-  <p><strong>Datum:</strong> {{ match.date }}</p>
-  <p>
-    <strong>Rezultat:</strong> {{ match.home_score }} : {{ match.away_score }}
-  </p>
+{% extends 'main/base.html' %} {% block title %}Detalji utakmice{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <div class="card shadow border-0">
+    <div
+      class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+    >
+      <h3 class="mb-0">⚽ {{ match.opponent }} – {{ match.date }}</h3>
+      <span class="badge bg-light text-primary fs-6"
+        >{{ match.get_category_display }}</span
+      >
+    </div>
+    <div class="card-body">
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <strong>Lokacija:</strong> {{ match.get_home_or_away_display }}
+        </div>
+        <div class="col-md-4">
+          <strong>Rezultat:</strong> {{ match.home_score }} :
+          {{match.away_score}}
+        </div>
+      </div>
 
-  <h4>Početnih 11:</h4>
-  <ul>
-    {% for player in match.starting_players.all %}
-    <li>{{ player.first_name }} {{ player.last_name }}</li>
-    {% endfor %}
-  </ul>
+      <div class="row g-3">
+        <div class="col-md-6">
+          <h5>🏃‍♂️ Početnih 11</h5>
+          <ul class="list-group list-group-flush mb-3">
+            {% for player in match.starting_players.all %}
+            <li class="list-group-item">
+              {{ player.first_name }} {{ player.last_name }}
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">Nema podataka.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <h5>🪑 Rezerve</h5>
+          <ul class="list-group list-group-flush mb-3">
+            {% for player in match.bench_players.all %}
+            <li class="list-group-item">
+              {{ player.first_name }} {{ player.last_name }}
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">Nema podataka.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <p>
+            <strong>Kapetan:</strong> {{ match.captain.first_name }}
+            {{match.captain.last_name }}
+          </p>
+        </div>
+        <div class="col-md-6">
+          <p>
+            <strong>Golman:</strong> {{ match.goalkeeper.first_name }}
+            {{match.goalkeeper.last_name }}
+          </p>
+        </div>
+      </div>
 
-  <h4>Rezerve:</h4>
-  <ul>
-    {% for player in match.bench_players.all %}
-    <li>{{ player.first_name }} {{ player.last_name }}</li>
-    {% endfor %}
-  </ul>
+      <hr class="my-4" />
 
-  <h4>Kapetan:</h4>
-  <p>{{ match.captain.first_name }} {{ match.captain.last_name }}</p>
+      <div class="accordion" id="actionsAccordion">
+        <!-- Golovi -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingGoals">
+            <button
+              class="accordion-button"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseGoals"
+              aria-expanded="true"
+              aria-controls="collapseGoals"
+            >
+              ⚽ Dodaj gol
+            </button>
+          </h2>
+          <div
+            id="collapseGoals"
+            class="accordion-collapse collapse show"
+            aria-labelledby="headingGoals"
+            data-bs-parent="#actionsAccordion"
+          >
+            <div class="accordion-body">
+              <form
+                method="post"
+                action="{% url 'main:add_goal' match.id %}"
+                class="d-flex flex-wrap gap-2 align-items-end"
+              >
+                {% csrf_token %} {{ goal_form.as_p }}
+                <button type="submit" class="btn btn-success">Spremi</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- Asistencije -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingAssists">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseAssists"
+              aria-expanded="false"
+              aria-controls="collapseAssists"
+            >
+              🎯 Dodaj asistenciju
+            </button>
+          </h2>
+          <div
+            id="collapseAssists"
+            class="accordion-collapse collapse"
+            aria-labelledby="headingAssists"
+            data-bs-parent="#actionsAccordion"
+          >
+            <div class="accordion-body">
+              <form
+                method="post"
+                action="{% url 'main:add_assist' match.id %}"
+                class="d-flex flex-wrap gap-2 align-items-end"
+              >
+                {% csrf_token %} {{ assist_form.as_p }}
+                <button type="submit" class="btn btn-primary">Spremi</button>
+              </form>
+            </div>
+          </div>
+        </div>
+        <!-- Kartoni -->
+        <div class="accordion-item">
+          <h2 class="accordion-header" id="headingCards">
+            <button
+              class="accordion-button collapsed"
+              type="button"
+              data-bs-toggle="collapse"
+              data-bs-target="#collapseCards"
+              aria-expanded="false"
+              aria-controls="collapseCards"
+            >
+              🟥🟨 Dodaj karton
+            </button>
+          </h2>
+          <div
+            id="collapseCards"
+            class="accordion-collapse collapse"
+            aria-labelledby="headingCards"
+            data-bs-parent="#actionsAccordion"
+          >
+            <div class="accordion-body">
+              <form
+                method="post"
+                action="{% url 'main:add_card' match.id %}"
+                class="d-flex flex-wrap gap-2 align-items-end"
+              >
+                {% csrf_token %} {{ card_form.as_p }}
+                <button type="submit" class="btn btn-warning text-white">
+                  Spremi
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
 
-  <h4>Golman:</h4>
-  <p>{{ match.goalkeeper.first_name }} {{ match.goalkeeper.last_name }}</p>
+      <hr class="my-4" />
 
-  <hr />
-
-  <h3>Dodaj gol</h3>
-  <form method="post" action="{% url 'main:add_goal' match.id %}">
-    {% csrf_token %} {{ goal_form.as_p }}
-    <button type="submit" class="btn btn-success">Dodaj gol</button>
-  </form>
-
-  <h3 class="mt-4">Dodaj asistenciju</h3>
-  <form method="post" action="{% url 'main:add_assist' match.id %}">
-    {% csrf_token %} {{ assist_form.as_p }}
-    <button type="submit" class="btn btn-primary">Dodaj asistenciju</button>
-  </form>
-
-  <h3 class="mt-4">Dodaj karton</h3>
-  <form method="post" action="{% url 'main:add_card' match.id %}">
-    {% csrf_token %} {{ card_form.as_p }}
-    <button type="submit" class="btn btn-warning">Dodaj karton</button>
-  </form>
-
-  <hr />
-
-  <h4>Golovi:</h4>
-  <ul>
-    {% for goal in match.goals.all %}
-    <li>
-      {{ goal.player.first_name }} {{ goal.player.last_name }} - {{ goal.minute
-      }}'
-    </li>
-    {% empty %}
-    <li>Nema golova.</li>
-    {% endfor %}
-  </ul>
-
-  <h4>Asistencije:</h4>
-  <ul>
-    {% for assist in match.assists.all %}
-    <li>
-      {{ assist.player.first_name }} {{ assist.player.last_name }} - {{
-      assist.minute }}'
-    </li>
-    {% empty %}
-    <li>Nema asistencija.</li>
-    {% endfor %}
-  </ul>
-
-  <h4>Kartoni:</h4>
-  <ul>
-    {% for card in match.cards.all %}
-    <li>
-      {{ card.get_card_type_display }} - {{ card.player.first_name }} {{
-      card.player.last_name }} - {{ card.minute }}'
-    </li>
-    {% empty %}
-    <li>Nema kartona.</li>
-    {% endfor %}
-  </ul>
+      <div class="row g-4">
+        <div class="col-md-4">
+          <h5>⚽ Golovi</h5>
+          <ul class="list-group list-group-flush">
+            {% for goal in match.goals.all %}
+            <li class="list-group-item">
+              {{ goal.player.first_name }} {{ goal.player.last_name }}
+              {{goal.minute }}'
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">Nema golova.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5>🎯 Asistencije</h5>
+          <ul class="list-group list-group-flush">
+            {% for assist in match.assists.all %}
+            <li class="list-group-item">
+              {{ assist.player.first_name }} {{ assist.player.last_name }}
+              {{assist.minute }}'
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">Nema asistencija.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="col-md-4">
+          <h5>🟥🟨 Kartoni</h5>
+          <ul class="list-group list-group-flush">
+            {% for card in match.cards.all %}
+            <li class="list-group-item">
+              {{ card.get_card_type_display }} – {{ card.minute }}' –>
+              {{card.player.first_name }} {{ card.player.last_name }}
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">Nema kartona.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <hr class="my-4" />
+        <div class="d-flex justify-content-end">
+          <a
+            href="{% url 'main:match_delete' match.id %}"
+            class="btn btn-danger"
+          >
+            🗑️ Obriši utakmicu
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endblock %}

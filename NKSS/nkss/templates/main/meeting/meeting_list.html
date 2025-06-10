@@ -1,0 +1,39 @@
+{% extends 'main/base.html' %} {% block title %}Sastanci u klubu{% endblock %}
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary">📅 Zapisnici sastanaka</h2>
+    <a class="btn btn-success shadow" href="{% url 'main:meeting_create' %}">
+      ➕ Dodaj sastanak
+    </a>
+  </div>
+
+  <div class="table-responsive shadow-sm rounded border">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Naslov</th>
+          <th>Datum</th>
+        </tr>
+      </thead>
+      <tbody class="table-group-divider">
+        {% for meeting in meetings %}
+        <tr
+          class="table-row-clickable"
+          data-href="{% url 'main:meeting_detail' meeting.id %}"
+        >
+          <td>{{ meeting.title }}</td>
+          <td>{{ meeting.date }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2" class="text-center text-muted py-4">
+            Nema zapisa sastanaka. 🗒️
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,73 @@
+{% extends 'main/base.html' %} {% block title %}Popis članova uprave{%endblock%}
+{% block content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary">
+      <i class="bi bi-people-fill"></i> Popis članova osoblja
+    </h2>
+    <a
+      href="{% url 'main:staffmember_create' %}"
+      class="btn btn-success shadow"
+    >
+      <i class="bi bi-plus-circle"></i> Dodaj člana
+    </a>
+  </div>
+
+  <div class="table-responsive shadow-sm rounded border">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Ime i prezime</th>
+          <th>Uloga</th>
+          <th>Pozicija</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody class="table-group-divider">
+        {% for member in staffmembers %}
+        <tr
+          class="table-row-clickable"
+          data-href="{% url 'main:staffmember_detail' member.id %}"
+        >
+          <td><strong>{{ member.name }}</strong></td>
+          <td>
+            <span class="badge bg-primary">{{ member.get_role_display }}</span>
+          </td>
+          <td>{{ member.position|default:"-" }}</td>
+          <td>
+            {% if member.active %}
+            <span class="badge bg-success">Aktivan</span>
+            {% else %}
+            <span class="badge bg-secondary">Neaktivan</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="4" class="text-center text-muted py-4">
+            Nema zapisanih članova osoblja.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<style>
+  .table-row-clickable:hover {
+    background-color: #f8f9fa;
+    cursor: pointer;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".table-row-clickable").forEach((row) => {
+      row.addEventListener("click", () => {
+        window.location.href = row.dataset.href;
+      });
+    });
+  });
+</script>
+{% endblock %}

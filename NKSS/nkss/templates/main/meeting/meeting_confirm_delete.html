@@ -1,0 +1,12 @@
+{% extends "main/base.html" %} {% block content %}
+<h2>Potvrdi brisanje</h2>
+<p>
+  Jeste li sigurni da želite obrisati zapisnik od
+  <strong>{{ meeting.date }}</strong>?
+</p>
+<form method="post">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-danger">Obriši</button>
+  <a href="{% url 'main:meeting-list' %}" class="btn btn-secondary">Odustani</a>
+</form>
+{% endblock %}

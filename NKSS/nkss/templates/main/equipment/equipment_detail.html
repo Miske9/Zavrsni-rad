@@ -1,0 +1,36 @@
+{% extends 'main/base.html' %} {% block title %}Detalji opreme{% endblock %}
+{%block content %}
+<div class="container my-4">
+  <div class="card shadow">
+    <div class="card-header bg-dark text-white">
+      <h4 class="mb-0">🎽 Detalji opreme</h4>
+    </div>
+    <div class="card-body">
+      <p><strong>Vrsta:</strong> {{ equipment.name }}</p>
+      <p><strong>Količina:</strong> {{ equipment.quantity }}</p>
+
+      {% if equipment.description %}
+      <p><strong>Opis:</strong> {{ equipment.description }}</p>
+      {% endif %} {% if equipment.purchase_date %}
+      <p><strong>Datum kupnje:</strong> {{ equipment.purchase_date }}</p>
+      {% endif %} {% if equipment.condition %}
+      <p><strong>Stanje:</strong> {{ equipment.condition }}</p>
+      {% endif %}
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+      <a
+        href="{% url 'main:equipment_update' equipment.id %}"
+        class="btn btn-warning"
+      >
+        ✏️ Uredi
+      </a>
+      <a
+        href="{% url 'main:equipment_delete' equipment.id %}"
+        class="btn btn-danger"
+      >
+        🗑️ Obriši
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}

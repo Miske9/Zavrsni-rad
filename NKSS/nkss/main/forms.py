@@ -1,5 +1,5 @@
 from django import forms
-from .models import Player, Match, MatchEvent, Goal, Assist, Card
+from .models import Player, Match, MatchEvent, Goal, Assist, Card, StaffMember, Meeting, Equipment
 from django.core.exceptions import ValidationError
 
 class PlayerForm(forms.ModelForm):
@@ -97,4 +97,28 @@ class CardForm(forms.ModelForm):
         widgets = {
             'minute': forms.NumberInput(attrs={'min': 0}),
             'card_type': forms.Select
+        }
+        
+class StaffMemberForm(forms.ModelForm):
+    class Meta:
+        model = StaffMember
+        fields = ['name', 'role', 'position', 'email', 'phone', 'active']
+
+
+class MeetingForm(forms.ModelForm):
+    class Meta:
+        model = Meeting
+        fields = ['date', 'title', 'notes', 'attendees']
+        widgets = {
+            'attendees': forms.CheckboxSelectMultiple(),
+            'date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+
+class EquipmentForm(forms.ModelForm):
+    class Meta:
+        model = Equipment
+        fields = ['name', 'type', 'quantity', 'condition', 'purchase_date', 'description']
+        widgets = {
+            'purchase_date': forms.DateInput(attrs={'type': 'date'}),
         }

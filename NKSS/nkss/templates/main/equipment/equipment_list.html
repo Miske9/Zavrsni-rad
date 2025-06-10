@@ -1,0 +1,39 @@
+{% extends 'main/base.html' %} {% block title %}Sportska oprema{% endblock %}
+{%block content %}
+<div class="container my-4">
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold text-primary">🎽 Sportska oprema</h2>
+    <a class="btn btn-success shadow" href="{% url 'main:equipment_create' %}">
+      ➕ Dodaj opremu
+    </a>
+  </div>
+
+  <div class="table-responsive shadow-sm rounded border">
+    <table class="table table-hover align-middle">
+      <thead class="table-dark">
+        <tr>
+          <th>Tip</th>
+          <th>Količina</th>
+        </tr>
+      </thead>
+      <tbody class="table-group-divider">
+        {% for item in equipment %}
+        <tr
+          class="table-row-clickable"
+          data-href="{% url 'main:equipment_detail' item.id %}"
+        >
+          <td>{{ item.name }}</td>
+          <td>{{ item.quantity }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="2" class="text-center text-muted py-4">
+            Nema unosa opreme. 🏃
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

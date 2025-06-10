@@ -1,0 +1,44 @@
+{% extends 'main/base.html' %} {% block title %}Detalji člana{% endblock %}
+{%block content %}
+<div class="container my-4">
+  <div class="card shadow">
+    <div
+      class="card-header bg-dark text-white d-flex justify-content-between align-items-center"
+    >
+      <h4 class="mb-0">👔 Detalji člana osoblja</h4>
+      {% if staffmember.active %}
+      <span class="badge bg-success">Aktivan</span>
+      {% else %}
+      <span class="badge bg-secondary">Neaktivan</span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+      <p><strong>Ime i prezime:</strong> {{ staffmember.name }}</p>
+      <p><strong>Uloga:</strong> {{ staffmember.get_role_display }}</p>
+      <p><strong>Pozicija:</strong> {{ staffmember.position|default:"-" }}</p>
+      {% if staffmember.phone %}
+      <p><strong>Broj mobitela:</strong> {{ staffmember.phone }}</p>
+      {% endif %} {% if staffmember.email %}
+      <p>
+        <strong>E-mail:</strong>
+        <a href="mailto:{{ staffmember.email }}">{{ staffmember.email }}</a>
+      </p>
+      {% endif %}
+    </div>
+    <div class="card-footer d-flex justify-content-between">
+      <a
+        href="{% url 'main:staffmember_update' staffmember.id %}"
+        class="btn btn-warning"
+      >
+        ✏️ Uredi
+      </a>
+      <a
+        href="{% url 'main:staffmember_delete' staffmember.id %}"
+        class="btn btn-danger"
+      >
+        🗑️ Obriši
+      </a>
+    </div>
+  </div>
+</div>
+{% endblock %}
