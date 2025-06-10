@@ -31,6 +31,7 @@
     <div class="card-body">
       <form method="post" id="match-form" class="row g-4">
         {% csrf_token %}
+        {{ form.category.as_hidden }}    
 
         <div class="col-12">
           <h5 class="border-bottom pb-2 mb-3">Osnovni podaci</h5>

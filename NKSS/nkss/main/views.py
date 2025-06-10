@@ -92,6 +92,9 @@ def match_list(request):
 def match_detail(request, pk):
     match = get_object_or_404(Match, pk=pk)
     events = MatchEvent.objects.filter(match=match).order_by('minute')
+
+    valid_players = match.starting_players.all() | match.bench_players.all()
+
     if request.method == "POST":
         form = MatchEventForm(request.POST)
         if form.is_valid():
@@ -101,10 +104,26 @@ def match_detail(request, pk):
             return redirect("main:match_detail", pk=pk)
     else:
         form = MatchEventForm()
-        form.fields['player'].queryset = match.starting_players.all() | match.bench_players.all()
-    return render(request, "main/matches/match_detail.html", {"match": match, "events": events, "form": form, 'goal_form': GoalForm(),
-    'assist_form': AssistForm(),
-    'card_form': CardForm(),})
+
+    # Ovdje ograničavamo forme samo na relevantne igrače
+    goal_form = GoalForm()
+    goal_form.fields['player'].queryset = valid_players.distinct()
+
+    assist_form = AssistForm()
+    assist_form.fields['player'].queryset = valid_players.distinct()
+
+    card_form = CardForm()
+    card_form.fields['player'].queryset = valid_players.distinct()
+
+    return render(request, "main/matches/match_detail.html", {
+        "match": match,
+        "events": events,
+        "form": form,
+        "goal_form": goal_form,
+        "assist_form": assist_form,
+        "card_form": card_form,
+    })
+
 
 def match_create(request):
     if request.method == "POST":
@@ -112,6 +131,9 @@ def match_create(request):
         if form.is_valid():
             match = form.save()
             for player in form.cleaned_data['starting_players']:
+                player.appearances += 1
+                player.save()
+            for player in form.cleaned_data['bench_players']:
                 player.appearances += 1
                 player.save()
             return redirect("main:match_list")
@@ -131,12 +153,45 @@ def match_update(request, pk):
         form = MatchForm(instance=match)
     return render(request, "main/matches/match_form.html", {"form": form})
 
+
+from django.shortcuts import get_object_or_404, redirect, render
+
 def match_delete(request, pk):
     match = get_object_or_404(Match, pk=pk)
+
     if request.method == "POST":
+        for goal in match.goals.all():
+            player = goal.player
+            player.goals = max(player.goals - 1, 0)
+            player.save()
+
+        for assist in match.assists.all():
+            player = assist.player
+            player.assists = max(player.assists - 1, 0)
+            player.save()
+
+        for card in match.cards.all():
+            player = card.player
+            if card.card_type == 'Y':
+                player.yellow_cards = max(player.yellow_cards - 1, 0)
+            elif card.card_type == 'R':
+                player.red_cards = max(player.red_cards - 1, 0)
+            player.save()
+
+        for player in match.starting_players.all() | match.bench_players.all():
+            player.appearances = max(player.appearances - 1, 0)
+            player.save()
+
+        match.goals.all().delete()
+        match.assists.all().delete()
+        match.cards.all().delete()
+
         match.delete()
         return redirect("main:match_list")
+
     return render(request, "main/matches/match_confirm_delete.html", {"match": match})
+
+
 
 def add_goal(request, match_id):
     match = get_object_or_404(Match, pk=match_id)
