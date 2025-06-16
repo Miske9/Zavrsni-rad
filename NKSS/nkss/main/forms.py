@@ -3,14 +3,23 @@ from .models import *
 from django.core.exceptions import ValidationError
 
 class PlayerForm(forms.ModelForm):
-    date_of_birth = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    date_of_birth = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Datum rođenja"
+    )
 
     class Meta:
         model = Player
         fields = ['first_name', 'last_name', 'date_of_birth', 'position', 'category']
+        labels = {
+            'first_name': 'Ime',
+            'last_name': 'Prezime',
+            'position': 'Pozicija',
+            'category': 'Kategorija',
+        }
 
 class MatchForm(forms.ModelForm):
-    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}))
+    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label="Datum utakmice")
     starting_players = forms.ModelMultipleChoiceField(
         queryset=Player.objects.all(),
         widget=forms.CheckboxSelectMultiple,
@@ -26,6 +35,18 @@ class MatchForm(forms.ModelForm):
     class Meta:
         model = Match
         fields = '__all__'
+        labels = {
+            'date': 'Datum utakmice',
+            'home_or_away': 'Domaćin ili gost',
+            'opponent': 'Protivnik',
+            'home_score': 'Golovi domaćina',
+            'away_score': 'Golovi gosta',
+            'category': 'Kategorija',
+            'starting_players': 'Startna postava',
+            'bench_players': 'Klupa',
+            'captain': 'Kapetan',
+            'goalkeeper': 'Golman',
+        }
         widgets = {
             'date': forms.DateInput(attrs={'type': 'date'}),
             'starting_players': forms.CheckboxSelectMultiple,
@@ -72,11 +93,20 @@ class MatchEventForm(forms.ModelForm):
     class Meta:
         model = MatchEvent
         fields = ['player', 'minute', 'event_type']
+        labels = {
+            'player': 'Igrač',
+            'minute': 'Minuta',
+            'event_type': 'Vrsta događaja',
+        }
         
 class GoalForm(forms.ModelForm):
     class Meta:
         model = Goal
         fields = ['player', 'minute']
+        labels = {
+            'player': 'Strijelac',
+            'minute': 'Minuta',
+        }
         widgets = {
             'minute': forms.NumberInput(attrs={'min': 0}),
         }
@@ -85,6 +115,10 @@ class AssistForm(forms.ModelForm):
     class Meta:
         model = Assist
         fields = ['player', 'minute']
+        labels = {
+            'player': 'Asistent',
+            'minute': 'Minuta',
+        }
         widgets = {
             'minute': forms.NumberInput(attrs={'min': 0}),
         }
@@ -93,6 +127,11 @@ class CardForm(forms.ModelForm):
     class Meta:
         model = Card
         fields = ['player', 'card_type', 'minute']
+        labels = {
+            'player': 'Igrač',
+            'card_type': 'Vrsta kartona',
+            'minute': 'Minuta',
+        }
         widgets = {
             'minute': forms.NumberInput(attrs={'min': 0}),
             'card_type': forms.Select
@@ -102,12 +141,26 @@ class StaffMemberForm(forms.ModelForm):
     class Meta:
         model = StaffMember
         fields = ['name', 'role', 'position', 'email', 'phone', 'active']
+        labels = {
+            'name': 'Ime i prezime',
+            'role': 'Uloga',
+            'position': 'Pozicija',
+            'email': 'Email',
+            'phone': 'Telefon',
+            'active': 'Aktivan',
+        }
 
 
 class MeetingForm(forms.ModelForm):
     class Meta:
         model = Meeting
         fields = ['date', 'title', 'notes', 'attendees']
+        labels = {
+            'date': 'Datum',
+            'title': 'Naslov',
+            'notes': 'Bilješke',
+            'attendees': 'Sudionici',
+        }
         widgets = {
             'attendees': forms.CheckboxSelectMultiple(),
             'date': forms.DateInput(attrs={'type': 'date'}),
@@ -118,6 +171,14 @@ class EquipmentForm(forms.ModelForm):
     class Meta:
         model = Equipment
         fields = ['name', 'type', 'quantity', 'condition', 'purchase_date', 'description']
+        labels = {
+            'name': 'Naziv',
+            'type': 'Vrsta',
+            'quantity': 'Količina',
+            'condition': 'Stanje',
+            'purchase_date': 'Datum nabave',
+            'description': 'Opis',
+        }
         widgets = {
             'purchase_date': forms.DateInput(attrs={'type': 'date'}),
         }
