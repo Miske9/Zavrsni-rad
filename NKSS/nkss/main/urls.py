@@ -11,6 +11,7 @@ urlpatterns = [
     path("players/<int:pk>/", views.player_detail, name="player_detail"),
     path("players/<int:pk>/edit/", views.player_update, name="player_update"),
     path("players/<int:pk>/delete/", views.player_delete, name="player_delete"),
+    path("players/stats/", views.stats_dashboard, name='stats_dashboard'),
 
     # Match urls
     path("matches/", views.match_list, name="match_list"),

@@ -1,0 +1,89 @@
+{% extends 'main/base.html' %}
+{% block title %}Statistika igrača{% endblock %}
+{% block content %}
+
+<!-- Change container to container-fluid and adjust padding -->
+<div class="container-fluid py-4 px-2 px-md-3" style="max-width: 900px;">
+    <h1 class="text-center fw-bold mb-4">📊 Statistika igrača</h1>
+
+    <form method="get" class="row justify-content-center mb-3">
+        <div class="col-auto">
+            <label for="category" class="col-form-label">Kategorija:</label>
+        </div>
+        <div class="col-auto">
+            <select name="category" id="category" class="form-select" onchange="this.form.submit()">
+                <option value="">Sve</option>
+                {% for code, name in categories %}
+                    <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <div class="d-flex justify-content-center gap-2 mb-4">
+        <button onclick="showChart('goals')" class="btn btn-primary">Golovi</button>
+        <button onclick="showChart('assists')" class="btn btn-success">Asistencije</button>
+        <button onclick="showChart('appearances')" class="btn btn-secondary">Nastupi</button>
+    </div>
+
+    <div class="card shadow py-4 px-3 px-md-4">
+      <div class="chart-container" style="width: 100%; margin: auto;">
+          <canvas id="playerChart"></canvas>
+      </div>
+    </div>
+</div>
+
+<!-- Rest of your JavaScript remains the same -->
+<script>
+    const dataSets = {
+        goals: {{ goals|safe }},
+        assists: {{ assists|safe }},
+        appearances: {{ appearances|safe }},
+    };
+
+    const colors = [
+        '#EF4444', '#3B82F6', '#10B981', '#F59E0B',
+        '#6366F1', '#EC4899', '#8B5CF6', '#22D3EE',
+        '#F97316', '#84CC16'
+    ];
+
+    const ctx = document.getElementById('playerChart').getContext('2d');
+    let chart;
+
+    function showChart(type) {
+        const data = dataSets[type];
+        const labels = data.map(item => item.name);
+        const values = data.map(item => item.value);
+        const backgroundColors = colors.slice(0, labels.length);
+
+        if (chart) chart.destroy();
+
+        chart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: type.charAt(0).toUpperCase() + type.slice(1),
+                    data: values,
+                    backgroundColor: backgroundColors,
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { display: false }
+                }
+            }
+        });
+    }
+
+    showChart('goals');
+</script>
+
+{% endblock %}

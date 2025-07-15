@@ -1,4 +1,5 @@
 from django.shortcuts import render, redirect, get_object_or_404
+from django.db.models import Count
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -42,8 +43,11 @@ def player_list(request):
 
 def player_detail(request, pk):
     player = get_object_or_404(Player, pk=pk)
-    return render(request, 'main/players/player_detail.html', {'player': player})
-
+    category_history = player.category_history.all()
+    return render(request, 'main/players/player_detail.html', {
+        'player': player,
+        'category_history': category_history
+    })
 def player_create(request):
     if request.method == 'POST':
         form = PlayerForm(request.POST)
@@ -71,6 +75,51 @@ def player_delete(request, pk):
         player.delete()
         return redirect('main:player_list')
     return render(request, 'main/players/player_confirm_delete.html', {'player': player})
+
+
+def stats_dashboard(request):
+    selected_category = request.GET.get('category', '')  # "" za sve
+
+    players = Player.objects.all()
+    if selected_category:
+        players = players.filter(category=selected_category)
+
+    goals = (
+        Goal.objects.filter(player__in=players)
+        .values('player__id', 'player__first_name', 'player__last_name')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:10]
+    )
+
+    assists = (
+        Assist.objects.filter(player__in=players)
+        .values('player__id', 'player__first_name', 'player__last_name')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:10]
+    )
+
+    appearances = (
+        players.order_by('-appearances')
+        .values('id', 'first_name', 'last_name', 'appearances')[:10]
+    )
+
+    def format_data(queryset, value_field='total'):
+        return [
+            {
+                "name": f"{item.get('first_name') or item.get('player__first_name')} {item.get('last_name') or item.get('player__last_name')}",
+                "value": item.get(value_field) or 0
+            } for item in queryset
+        ]
+
+    context = {
+        'categories': CATEGORIES,
+        'selected_category': selected_category,
+        'goals': format_data(goals),
+        'assists': format_data(assists),
+        'appearances': format_data(appearances, value_field='appearances'),
+    }
+
+    return render(request, 'main/stats_dashboard.html', context)
 
 def match_list(request):
     matches = Match.objects.all().order_by('-date')
