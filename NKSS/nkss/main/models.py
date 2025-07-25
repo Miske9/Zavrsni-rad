@@ -37,6 +37,15 @@ class Player(models.Model):
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+class PlayerCategoryHistory(models.Model):
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='category_history')
+    category = models.CharField(max_length=3, choices=CATEGORIES)
+    changed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.player} - {self.get_category_display()} ({self.changed_at.date()})"
+
 
 class Match(models.Model):
     HOME_AWAY = [("H", "Home"), ("A", "Away")]

@@ -17,6 +17,17 @@
         <strong>📘 Kategorija:</strong> {{ player.category }}
       </li>
       <li class="list-group-item">
+        <strong>📚 Kategorije u kojima je igrao:</strong>
+        <ul class="mb-0">
+          {% for record in category_history %}
+            <li>{{ record.get_category_display }}</li>
+          {% empty %}
+            <li>Nema zabilježenih kategorija.</li>
+          {% endfor %}
+        </ul>
+      </li>
+      
+      <li class="list-group-item">
         <strong>⚽ Golovi:</strong> {{ player.goals }}
       </li>
       <li class="list-group-item">

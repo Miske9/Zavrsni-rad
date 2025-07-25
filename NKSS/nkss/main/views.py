@@ -43,16 +43,20 @@ def player_list(request):
 
 def player_detail(request, pk):
     player = get_object_or_404(Player, pk=pk)
-    category_history = player.category_history.all()
+    history = player.category_history.order_by('-changed_at')
     return render(request, 'main/players/player_detail.html', {
         'player': player,
-        'category_history': category_history
+        'category_history': history
     })
+
 def player_create(request):
     if request.method == 'POST':
         form = PlayerForm(request.POST)
         if form.is_valid():
-            form.save()
+            player = form.save()
+            # Spremi početnu kategoriju u povijest
+            if player.category:
+                PlayerCategoryHistory.objects.create(player=player, category=player.category)
             return redirect('main:player_list')
     else:
         form = PlayerForm()
@@ -60,9 +64,14 @@ def player_create(request):
 
 def player_update(request, pk):
     player = get_object_or_404(Player, pk=pk)
+    old_category = player.category  # Spremi staru kategoriju
+
     if request.method == 'POST':
         form = PlayerForm(request.POST, instance=player)
         if form.is_valid():
+            new_category = form.cleaned_data['category']
+            if old_category != new_category and new_category:
+                PlayerCategoryHistory.objects.create(player=player, category=new_category)
             form.save()
             return redirect('main:player_detail', pk=pk)
     else:
@@ -75,7 +84,6 @@ def player_delete(request, pk):
         player.delete()
         return redirect('main:player_list')
     return render(request, 'main/players/player_confirm_delete.html', {'player': player})
-
 
 def stats_dashboard(request):
     selected_category = request.GET.get('category', '')  # "" za sve
