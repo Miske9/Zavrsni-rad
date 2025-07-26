@@ -1,38 +1,80 @@
 {% extends 'main/base.html' %}
+{% load form_tags %}
+
 {% block title %}
   {% if form.instance.pk %}
     Uredi igrača
   {% else %}
     Dodaj igrača
   {% endif %}
-{% endblock %} {% block content %}
-  <div class="container my-4">
-    <div class="card shadow border-0">
-      <div class="card-header bg-primary text-white">
-        <h3 class="mb-0">
-          {% if form.instance.pk %}
-            ✏️ Uredi igrača
-          {% else %}
-            ➕ Dodaj igrača
+{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+  <div class="card shadow border-0">
+    <div class="card-header bg-primary text-white">
+      <h3 class="mb-0">
+        {% if form.instance.pk %}
+          ✏️ Uredi igrača
+        {% else %}
+          ➕ Dodaj igrača
+        {% endif %}
+      </h3>
+    </div>
+    <div class="card-body">
+      <form method="post" class="row g-3">
+        {% csrf_token %}
+
+        <!-- Ime i Prezime -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.first_name.id_for_label }}">Ime:</label>
+          {{ form.first_name|add_class:"form-control" }}
+          {% if form.first_name.errors %}
+            <div class="text-danger small">{{ form.first_name.errors|striptags }}</div>
           {% endif %}
-        </h3>
-      </div>
-      <div class="card-body">
-        <form method="post" class="row g-3">
-          {% csrf_token %} {% for field in form %}
-            <div class="col-md-6">
-              <label class="form-label fw-semibold" for="{{ field.id_for_label }}">{{ field.label }}:</label>
-              {{ field }} {% if field.errors %}
-                <div class="text-danger small">{{ field.errors|striptags }}</div>
-              {% endif %}
-            </div>
-          {% endfor %}
-          <div class="col-12 d-flex justify-content-end gap-2">
-            <a href="{% url 'main:player_list' %}" class="btn btn-outline-secondary">Odustani</a>
-            <button class="btn btn-success" type="submit">💾 Spremi</button>
-          </div>
-        </form>
-      </div>
+        </div>
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.last_name.id_for_label }}">Prezime:</label>
+          {{ form.last_name|add_class:"form-control" }}
+          {% if form.last_name.errors %}
+            <div class="text-danger small">{{ form.last_name.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Datum rođenja -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.date_of_birth.id_for_label }}">Datum rođenja:</label>
+          {{ form.date_of_birth|add_class:"form-control" }}
+          {% if form.date_of_birth.errors %}
+            <div class="text-danger small">{{ form.date_of_birth.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Pozicija -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.position.id_for_label }}">Pozicija:</label>
+          {{ form.position|add_class:"form-select" }}
+          {% if form.position.errors %}
+            <div class="text-danger small">{{ form.position.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Kategorija -->
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.category.id_for_label }}">Kategorija:</label>
+          {{ form.category|add_class:"form-select" }}
+          {% if form.category.errors %}
+            <div class="text-danger small">{{ form.category.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Gumbi -->
+        <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+          <a href="{% url 'main:player_list' %}" class="btn btn-outline-secondary">Odustani</a>
+          <button class="btn btn-success" type="submit">💾 Spremi</button>
+        </div>
+      </form>
     </div>
   </div>
+</div>
 {% endblock %}
