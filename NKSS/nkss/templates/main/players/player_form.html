@@ -25,7 +25,6 @@
       <form method="post" class="row g-3">
         {% csrf_token %}
 
-        <!-- Ime i Prezime -->
         <div class="col-md-6">
           <label class="form-label fw-semibold" for="{{ form.first_name.id_for_label }}">Ime:</label>
           {{ form.first_name|add_class:"form-control" }}
@@ -41,7 +40,6 @@
           {% endif %}
         </div>
 
-        <!-- Datum rođenja -->
         <div class="col-md-6">
           <label class="form-label fw-semibold" for="{{ form.date_of_birth.id_for_label }}">Datum rođenja:</label>
           {{ form.date_of_birth|add_class:"form-control" }}
@@ -50,7 +48,6 @@
           {% endif %}
         </div>
 
-        <!-- Pozicija -->
         <div class="col-md-6">
           <label class="form-label fw-semibold" for="{{ form.position.id_for_label }}">Pozicija:</label>
           {{ form.position|add_class:"form-select" }}
@@ -59,7 +56,6 @@
           {% endif %}
         </div>
 
-        <!-- Kategorija -->
         <div class="col-md-6">
           <label class="form-label fw-semibold" for="{{ form.category.id_for_label }}">Kategorija:</label>
           {{ form.category|add_class:"form-select" }}
@@ -68,7 +64,6 @@
           {% endif %}
         </div>
 
-        <!-- Gumbi -->
         <div class="col-12 d-flex justify-content-end gap-2 mt-3">
           <a href="{% url 'main:player_list' %}" class="btn btn-outline-secondary">Odustani</a>
           <button class="btn btn-success" type="submit">💾 Spremi</button>

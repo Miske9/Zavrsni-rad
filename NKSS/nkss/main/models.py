@@ -77,7 +77,6 @@ class MatchEvent(models.Model):
     event_type = models.CharField(max_length=6, choices=EVENT_TYPES)
 
     def save(self, *args, **kwargs):
-        # Automatic stats update
         if not self.pk:
             if self.event_type == "GOAL":
                 self.player.goals += 1

@@ -64,7 +64,7 @@ def player_create(request):
 
 def player_update(request, pk):
     player = get_object_or_404(Player, pk=pk)
-    old_category = player.category  # Spremi staru kategoriju
+    old_category = player.category  
 
     if request.method == 'POST':
         form = PlayerForm(request.POST, instance=player)
@@ -86,7 +86,7 @@ def player_delete(request, pk):
     return render(request, 'main/players/player_confirm_delete.html', {'player': player})
 
 def stats_dashboard(request):
-    selected_category = request.GET.get('category', '')  # "" za sve
+    selected_category = request.GET.get('category', '') 
 
     players = Player.objects.all()
     if selected_category:
@@ -165,7 +165,6 @@ def match_detail(request, pk):
     else:
         form = MatchEventForm()
 
-    # Ovdje ograničavamo forme samo na relevantne igrače
     goal_form = GoalForm()
     goal_form.fields['player'].queryset = valid_players.distinct()
 

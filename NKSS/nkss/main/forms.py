@@ -23,11 +23,10 @@ class PlayerForm(forms.ModelForm):
         category = self.cleaned_data.get('category')
         dob = self.cleaned_data.get('date_of_birth')
         
-        if self.instance.pk:  # Ako uređujemo već postojećeg igrača
+        if self.instance.pk:  
             history = self.instance.category_history.all().values_list('category', flat=True)
             previous_categories = set(history)
 
-            # Indeks kategorije u CATEGORIES listi
             cat_order = [c[0] for c in CATEGORIES]
             current_index = cat_order.index(category)
 
@@ -37,19 +36,18 @@ class PlayerForm(forms.ModelForm):
 
 
         if not category or not dob:
-            return category  # Ne validiraj ako podaci nisu uneseni
+            return category  
 
         today = date.today()
         age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
 
-        # Granice po kategorijama (prilagodi po želji)
         category_age_limits = {
             'U9': 9,
             'U11': 11,
             'MP': 13,
             'SP': 15,
             'JUN': 18,
-            'SEN': 50,  # sve iznad 18
+            'SEN': 50,  
             'VET': 100,
         }
 
