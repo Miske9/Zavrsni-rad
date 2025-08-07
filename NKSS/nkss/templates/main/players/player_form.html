@@ -25,6 +25,11 @@
       <form method="post" class="row g-3">
         {% csrf_token %}
 
+        <!-- Osnovni podaci -->
+        <div class="col-12">
+          <h5 class="border-bottom pb-2 mb-3">📝 Osnovni podaci</h5>
+        </div>
+
         <div class="col-md-6">
           <label class="form-label fw-semibold" for="{{ form.first_name.id_for_label }}">Ime:</label>
           {{ form.first_name|add_class:"form-control" }}
@@ -64,7 +69,50 @@
           {% endif %}
         </div>
 
-        <div class="col-12 d-flex justify-content-end gap-2 mt-3">
+        <!-- Podaci o članstvu -->
+        <div class="col-12">
+          <h5 class="border-bottom pb-2 mb-3 mt-4">🏃 Članstvo u klubu</h5>
+        </div>
+
+        <div class="col-md-6">
+          <div class="form-check mb-0 d-flex align-items-center">
+            {{ form.is_active_member|add_class:"form-check-input me-2" }}
+            <label class="form-check-label fw-semibold" for="{{ form.is_active_member.id_for_label }}">
+              {{ form.is_active_member.label }}
+            </label>
+          </div>
+          {% if form.is_active_member.errors %}
+            <div class="text-danger small">{{ form.is_active_member.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.member_since.id_for_label }}">Član od:</label>
+          {{ form.member_since|add_class:"form-control" }}
+          {% if form.member_since.errors %}
+            <div class="text-danger small">{{ form.member_since.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <div class="col-md-6">
+          <label class="form-label fw-semibold" for="{{ form.member_until.id_for_label }}">Član do (opcionalno):</label>
+          {{ form.member_until|add_class:"form-control" }}
+          <div class="form-text">Ostavite prazno za aktivne članove</div>
+          {% if form.member_until.errors %}
+            <div class="text-danger small">{{ form.member_until.errors|striptags }}</div>
+          {% endif %}
+        </div>
+
+        <!-- Prikaži greške forme -->
+        {% if form.non_field_errors %}
+          <div class="col-12">
+            <div class="alert alert-danger">
+              {{ form.non_field_errors }}
+            </div>
+          </div>
+        {% endif %}
+
+        <div class="col-12 d-flex justify-content-end gap-2 mt-4">
           <a href="{% url 'main:player_list' %}" class="btn btn-outline-secondary">Odustani</a>
           <button class="btn btn-success" type="submit">💾 Spremi</button>
         </div>
@@ -72,4 +120,29 @@
     </div>
   </div>
 </div>
+
+<script>
+// JavaScript za automatsko skrivanje/prikazivanje polja "Član do" ovisno o statusu
+document.addEventListener('DOMContentLoaded', function() {
+    const isActiveCheckbox = document.getElementById('{{ form.is_active_member.id_for_label }}');
+    const memberUntilField = document.getElementById('{{ form.member_until.id_for_label }}');
+    const memberUntilContainer = memberUntilField.closest('.col-md-6');
+
+    function toggleMemberUntil() {
+        if (isActiveCheckbox.checked) {
+            memberUntilContainer.style.display = 'none';
+            memberUntilField.value = '';
+        } else {
+            memberUntilContainer.style.display = 'block';
+        }
+    }
+
+    // Pozovi na početku
+    toggleMemberUntil();
+
+    // Dodaj event listener
+    isActiveCheckbox.addEventListener('change', toggleMemberUntil);
+});
+</script>
+
 {% endblock %}

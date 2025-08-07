@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.db.models import Q, Sum, Avg, Count, F
 from django.db.models.signals import pre_save
@@ -9,15 +9,16 @@ from .forms import *
 
 def index(request):
     return render(request, 'main/index.html')
-def player_list(request):
 
-    players = players.order_by('category', 'last_name')
+def player_list(request):
+    players = Player.objects.all().order_by('category', 'last_name')
 
     category = request.GET.get('category')
     first_name = request.GET.get('first_name')
     last_name = request.GET.get('last_name')
     dob = request.GET.get('date_of_birth')
     position = request.GET.get('position')
+    status = request.GET.get('status')  # Dodano za filtriranje po statusu
 
     if category:
         players = players.filter(category=category)
@@ -29,6 +30,10 @@ def player_list(request):
         players = players.filter(date_of_birth=dob)
     if position:
         players = players.filter(position=position)
+    if status == 'active':
+        players = players.filter(is_active_member=True)
+    elif status == 'inactive':
+        players = players.filter(is_active_member=False)
 
     return render(request, 'main/players/player_list.html', {
         'players': players,
@@ -38,6 +43,7 @@ def player_list(request):
             'last_name': last_name,
             'date_of_birth': dob,
             'position': position,
+            'status': status,
         },
         'categories': CATEGORIES,
         'positions': POSITIONS,
@@ -75,6 +81,10 @@ def player_update(request, pk):
             if old_category != new_category and new_category:
                 PlayerCategoryHistory.objects.create(player=player, category=new_category)
             
+            # Automatski postavi member_until ako je igrač deaktiviran
+            if not form.cleaned_data['is_active_member'] and not form.cleaned_data.get('member_until'):
+                player.member_until = date.today()
+            
             form.save()
             return redirect('main:player_detail', pk=pk)
     else:
@@ -83,6 +93,7 @@ def player_update(request, pk):
         # Provjeri URL parametre za brže mijenjanje statusa
         if request.GET.get('deactivate') == 'true':
             form.initial['is_active_member'] = False
+            form.initial['member_until'] = date.today()
         elif request.GET.get('activate') == 'true':
             form.initial['is_active_member'] = True
             form.initial['member_until'] = None  # Ukloni datum završetka
@@ -120,7 +131,7 @@ def stats_dashboard(request):
     if selected_category:
         matches = matches.filter(category=selected_category)
     
-    # Filtriraj igrače po kategoriji
+    # Filtriraj igrače po kategoriji - ne filtriramo po aktivnosti za statistike
     players = Player.objects.all()
     if selected_category:
         players = players.filter(category=selected_category)
@@ -242,6 +253,13 @@ def stats_dashboard(request):
 
     return render(request, 'main/stats_dashboard.html', context)
 
+def player_delete(request, pk):
+    player = get_object_or_404(Player, pk=pk)
+    if request.method == 'POST':
+        player.delete()
+        return redirect('main:player_list')
+    return render(request, 'main/players/player_confirm_delete.html', {'player': player})
+
 def match_list(request):
     matches = Match.objects.all().order_by('-date')
 
@@ -266,7 +284,9 @@ def match_detail(request, pk):
     match = get_object_or_404(Match, pk=pk)
     events = MatchEvent.objects.filter(match=match).order_by('minute')
 
+    # Filtriraj samo aktivne igrače za forme
     valid_players = match.starting_players.all() | match.bench_players.all()
+    active_valid_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
 
     if request.method == "POST":
         form = MatchEventForm(request.POST)
@@ -279,13 +299,13 @@ def match_detail(request, pk):
         form = MatchEventForm()
 
     goal_form = GoalEventForm()
-    goal_form.fields['player'].queryset = valid_players.distinct()
+    goal_form.fields['player'].queryset = active_valid_players.distinct()
 
     assist_form = AssistEventForm()
-    assist_form.fields['player'].queryset = valid_players.distinct()
+    assist_form.fields['player'].queryset = active_valid_players.distinct()
 
     card_form = CardEventForm()
-    card_form.fields['player'].queryset = valid_players.distinct()
+    card_form.fields['player'].queryset = active_valid_players.distinct()
 
     return render(request, "main/matches/match_detail.html", {
         "match": match,
@@ -301,11 +321,14 @@ def match_create(request):
     if request.method == "POST":
         form = MatchForm(request.POST)
         
-        # Dobijemo igrače za formset-ove
+        # Dobijemo igrače za formset-ove - samo aktivne
         valid_players = Player.objects.none()
         if 'category' in request.POST:
             category = request.POST.get('category')
-            valid_players = Player.objects.filter(category=category)
+            valid_players = Player.objects.filter(
+                category=category,
+                is_active_member=True
+            ).exclude(member_until__lt=date.today())
         
         # Kreiraj formset-ove s validnim igračima
         goal_formset = GoalFormSet(request.POST, prefix='goals', 
@@ -446,11 +469,15 @@ def add_goal(request, match_id):
     match = get_object_or_404(Match, pk=match_id)
     if request.method == 'POST':
         player_id = request.POST['player']
+        player = get_object_or_404(Player, id=player_id)
+        
+        # Provjeri da je igrač aktivan član
+        if not player.is_current_member:
+            return redirect('main:match_detail', pk=match_id)
+        
         minute = request.POST['minute']
-        Goal.objects.create(match=match, player_id=player_id, minute=minute)
-        player = Player.objects.get(id=player_id)
+        Goal.objects.create(match=match, player=player, minute=minute)
         player.goals += 1
-        player.appearances += 0
         player.save()
         return redirect('main:match_detail', pk=match_id)
 
@@ -458,11 +485,15 @@ def add_assist(request, match_id):
     match = get_object_or_404(Match, pk=match_id)
     if request.method == 'POST':
         player_id = request.POST['player']
+        player = get_object_or_404(Player, id=player_id)
+        
+        # Provjeri da je igrač aktivan član
+        if not player.is_current_member:
+            return redirect('main:match_detail', pk=match_id)
+        
         minute = request.POST['minute']
-        Assist.objects.create(match=match, player_id=player_id, minute=minute)
-        player = Player.objects.get(id=player_id)
+        Assist.objects.create(match=match, player=player, minute=minute)
         player.assists += 1
-        player.appearances += 0
         player.save()
     return redirect('main:match_detail', pk=match_id)
 
@@ -470,15 +501,19 @@ def add_card(request, match_id):
     match = get_object_or_404(Match, pk=match_id)
     if request.method == 'POST':
         player_id = request.POST['player']
+        player = get_object_or_404(Player, id=player_id)
+        
+        # Provjeri da je igrač aktivan član
+        if not player.is_current_member:
+            return redirect('main:match_detail', pk=match_id)
+        
         minute = request.POST['minute']
         card_type = request.POST['card_type']
-        Card.objects.create(match=match, player_id=player_id, minute=minute, card_type=card_type)
-        player = Player.objects.get(id=player_id)
+        Card.objects.create(match=match, player=player, minute=minute, card_type=card_type)
         if card_type == 'Y':
             player.yellow_cards += 1
         elif card_type == 'R':
             player.red_cards += 1
-        player.appearances += 0
         player.save()
     return redirect('main:match_detail', pk=match_id)
 

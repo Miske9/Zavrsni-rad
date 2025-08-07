@@ -8,16 +8,67 @@ class PlayerForm(forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date'}),
         label="Datum rođenja"
     )
+    
+    member_since = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Član od",
+        required=False
+    )
+    
+    member_until = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}),
+        label="Član do",
+        required=False
+    )
 
     class Meta:
         model = Player
-        fields = ['first_name', 'last_name', 'date_of_birth', 'position', 'category']
+        fields = ['first_name', 'last_name', 'date_of_birth', 'position', 'category', 
+                  'is_active_member', 'member_since', 'member_until']
         labels = {
             'first_name': 'Ime',
             'last_name': 'Prezime',
             'position': 'Pozicija',
             'category': 'Kategorija',
+            'is_active_member': 'Aktivan član',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        # If this is an existing player being reactivated
+        if self.instance.pk and not self.instance.is_active_member:
+            # Check membership history
+            history = self.instance.membership_history.filter(
+                action__in=['ACTIVATED', 'REACTIVATED']
+            ).order_by('-created_at').first()
+            
+            if history:
+                self.fields['member_since'].help_text = f"Bio član od {history.date_from.strftime('%d.%m.%Y')}"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        is_active = cleaned_data.get('is_active_member')
+        member_since = cleaned_data.get('member_since')
+        member_until = cleaned_data.get('member_until')
+        
+        # If activating a player
+        if is_active:
+            if not member_since:
+                cleaned_data['member_since'] = date.today()
+            
+            # If there's an end date, it should be in the future
+            if member_until and member_until < date.today():
+                raise ValidationError("Datum završetka članstva ne može biti u prošlosti za aktivnog člana.")
+        
+        # If deactivating a player
+        if not is_active and self.instance.pk:
+            old_player = Player.objects.get(pk=self.instance.pk)
+            if old_player.is_active_member and not member_until:
+                # Set today as the end date if not specified
+                cleaned_data['member_until'] = date.today()
+        
+        return cleaned_data
 
     def clean_category(self):
         category = self.cleaned_data.get('category')
@@ -33,7 +84,6 @@ class PlayerForm(forms.ModelForm):
             for prev_cat in previous_categories:
                 if cat_order.index(prev_cat) > current_index:
                     raise forms.ValidationError(f"Igrač se ne može vratiti u mlađu kategoriju ({dict(CATEGORIES)[prev_cat]} > {dict(CATEGORIES)[category]}).")
-
 
         if not category or not dob:
             return category  
@@ -58,15 +108,33 @@ class PlayerForm(forms.ModelForm):
 
         return category
 
+    def save(self, commit=True):
+        player = super().save(commit=False)
+        
+        # Track if this is a reactivation
+        if self.instance.pk:
+            old_player = Player.objects.get(pk=self.instance.pk)
+            
+            # If reactivating
+            if not old_player.is_active_member and player.is_active_member:
+                # Keep the original member_since if it exists
+                if old_player.member_since:
+                    player.member_since = old_player.member_since
+        
+        if commit:
+            player.save()
+        
+        return player
+
 class MatchForm(forms.ModelForm):
     date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label="Datum utakmice")
     starting_players = forms.ModelMultipleChoiceField(
-        queryset=Player.objects.all(),
+        queryset=Player.objects.none(),  # Ovo će se ažurirati u __init__
         widget=forms.CheckboxSelectMultiple,
         label="Startna postava (točno 11)"
     )
     bench_players = forms.ModelMultipleChoiceField(
-        queryset=Player.objects.all(),
+        queryset=Player.objects.none(),  # Ovo će se ažurirati u __init__
         widget=forms.CheckboxSelectMultiple,
         required=False,
         label="Klupe (max 7)"
@@ -104,7 +172,13 @@ class MatchForm(forms.ModelForm):
             category = self.data.get('category')
 
         if category:
-            players = Player.objects.filter(category=category)
+            # Filtriraj samo aktivne igrače iz određene kategorije
+            players = Player.objects.filter(
+                category=category,
+                is_active_member=True
+            ).exclude(
+                member_until__lt=date.today()
+            )
             self.fields['starting_players'].queryset = players
             self.fields['bench_players'].queryset = players
             self.fields['captain'].queryset = players
@@ -123,6 +197,17 @@ class MatchForm(forms.ModelForm):
         goalkeeper = cleaned_data.get("goalkeeper")
         home_score = cleaned_data.get("home_score", 0)
         away_score = cleaned_data.get("away_score", 0)
+
+        # Provjeri da su svi igrači aktivni članovi
+        all_players = list(starters or []) + list(bench or [])
+        if captain:
+            all_players.append(captain)
+        if goalkeeper:
+            all_players.append(goalkeeper)
+            
+        for player in all_players:
+            if not player.is_current_member:
+                raise ValidationError(f"Igrač {player.first_name} {player.last_name} nije aktivan član kluba.")
 
         if starters and len(starters) != 11:
             raise ValidationError("Točno 11 igrača mora biti u startnoj postavi.")
@@ -173,13 +258,6 @@ class MatchForm(forms.ModelForm):
             for goal in same_minute_goals:
                 if goal['player'] == assist['player']:
                     errors.append(f"Igrač ne može asistirati svoj vlastiti gol u {assist['minute']}. minuti")
-                    
-        # if starters and bench:
-          #  overlap = set(starters) & set(bench)
-           # if overlap:
-           #     player_names = [f"{p.first_name} {p.last_name}" for p in overlap]
-           #     raise ValidationError(f"Igrači ne mogu biti istovremeno u startnoj postavi i na klupi: {', '.join(player_names)}")
-
         
         return errors
     
@@ -201,7 +279,12 @@ class GoalEventForm(forms.Form):
     def __init__(self, *args, **kwargs):
         valid_players = kwargs.pop('valid_players', Player.objects.none())
         super().__init__(*args, **kwargs)
-        self.fields['player'].queryset = valid_players
+        # Filtriraj samo aktivne igrače
+        if valid_players:
+            active_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
+            self.fields['player'].queryset = active_players
+        else:
+            self.fields['player'].queryset = Player.objects.none()
         self.fields['player'].widget.attrs.update({'class': 'form-select'})
 
 class AssistEventForm(forms.Form):
@@ -212,7 +295,12 @@ class AssistEventForm(forms.Form):
     def __init__(self, *args, **kwargs):
         valid_players = kwargs.pop('valid_players', Player.objects.none())
         super().__init__(*args, **kwargs)
-        self.fields['player'].queryset = valid_players
+        # Filtriraj samo aktivne igrače
+        if valid_players:
+            active_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
+            self.fields['player'].queryset = active_players
+        else:
+            self.fields['player'].queryset = Player.objects.none()
         self.fields['player'].widget.attrs.update({'class': 'form-select'})
 
 class CardEventForm(forms.Form):
@@ -225,7 +313,12 @@ class CardEventForm(forms.Form):
     def __init__(self, *args, **kwargs):
         valid_players = kwargs.pop('valid_players', Player.objects.none())
         super().__init__(*args, **kwargs)
-        self.fields['player'].queryset = valid_players
+        # Filtriraj samo aktivne igrače
+        if valid_players:
+            active_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
+            self.fields['player'].queryset = active_players
+        else:
+            self.fields['player'].queryset = Player.objects.none()
         
 GoalFormSet = forms.formset_factory(GoalEventForm, extra=5, max_num=10)
 AssistFormSet = forms.formset_factory(AssistEventForm, extra=5, max_num=10)

@@ -35,9 +35,58 @@ class Player(models.Model):
     yellow_cards = models.PositiveIntegerField(default=0)
     red_cards = models.PositiveIntegerField(default=0)
     appearances = models.PositiveIntegerField(default=0)
+    
+    # Membership tracking fields
+    is_active_member = models.BooleanField(default=True, verbose_name='Aktivan član')
+    member_since = models.DateField(default=date.today, verbose_name='Član od')
+    member_until = models.DateField(blank=True, null=True, verbose_name='Član do')
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
+    
+    def get_membership_status(self):
+        """Returns detailed membership status"""
+        today = date.today()
+        
+        if self.is_active_member:
+            if self.member_until and self.member_until >= today:
+                return f"Aktivan član do {self.member_until.strftime('%d.%m.%Y')}"
+            else:
+                return "Aktivan član"
+        else:
+            # Check if there's a future reactivation date
+            if self.member_until and self.member_until > today:
+                return f"Neaktivan (bio član, ponovno aktivan od {self.member_until.strftime('%d.%m.%Y')})"
+            else:
+                return "Neaktivan član"
+    
+    def save(self, *args, **kwargs):
+        # If reactivating a player
+        if self.pk:  # Only for existing players
+            old_player = Player.objects.get(pk=self.pk)
+            
+            # If switching from inactive to active
+            if not old_player.is_active_member and self.is_active_member:
+                # Create membership history record
+                MembershipHistory.objects.create(
+                    player=self,
+                    action='REACTIVATED',
+                    date_from=date.today(),
+                    date_until=self.member_until,
+                    notes=f"Ponovno aktiviran {date.today().strftime('%d.%m.%Y')}"
+                )
+            # If deactivating
+            elif old_player.is_active_member and not self.is_active_member:
+                # Create deactivation record
+                MembershipHistory.objects.create(
+                    player=self,
+                    action='DEACTIVATED',
+                    date_from=old_player.member_since,
+                    date_until=self.member_until or date.today(),
+                    notes=f"Deaktiviran {date.today().strftime('%d.%m.%Y')}"
+                )
+        
+        super().save(*args, **kwargs)
     
 class PlayerCategoryHistory(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='category_history')
@@ -46,6 +95,29 @@ class PlayerCategoryHistory(models.Model):
 
     def __str__(self):
         return f"{self.player} - {self.get_category_display()} ({self.changed_at.date()})"
+
+class MembershipHistory(models.Model):
+    """Track membership changes for players"""
+    ACTION_CHOICES = [
+        ('ACTIVATED', 'Aktiviran'),
+        ('DEACTIVATED', 'Deaktiviran'),
+        ('REACTIVATED', 'Ponovno aktiviran'),
+        ('EXTENDED', 'Produženo članstvo'),
+    ]
+    
+    player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='membership_history')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES)
+    date_from = models.DateField()
+    date_until = models.DateField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    notes = models.TextField(blank=True)
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name_plural = "Membership histories"
+    
+    def __str__(self):
+        return f"{self.player} - {self.get_action_display()} ({self.created_at.date()})"
 
 
 class Match(models.Model):

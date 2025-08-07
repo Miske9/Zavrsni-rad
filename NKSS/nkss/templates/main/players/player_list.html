@@ -25,7 +25,7 @@
       <div class="col-md-2">
         <input type="date" class="form-control" name="date_of_birth" value="{{ filter_values.date_of_birth }}">
       </div>
-      <div class="col-md-2">
+      <div class="col-md-1">
         <select class="form-select" name="category">
           <option value="">Kategorije</option>
           {% for code, label in categories %}
@@ -33,12 +33,19 @@
           {% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md-1">
         <select class="form-select" name="position">
           <option value="">Pozicije</option>
           {% for code, label in positions %}
           <option value="{{ code }}" {% if filter_values.position == code %}selected{% endif %}>{{ label }}</option>
           {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" name="status">
+          <option value="">Svi članovi</option>
+          <option value="active" {% if filter_values.status == 'active' %}selected{% endif %}>Aktivni</option>
+          <option value="inactive" {% if filter_values.status == 'inactive' %}selected{% endif %}>Neaktivni</option>
         </select>
       </div>
       <div class="col-md-2">
@@ -56,6 +63,9 @@
           <th>Datum rođenja</th>
           <th>Pozicija</th>
           <th>Kategorija</th>
+          <th>Status</th>
+          <th>Član od</th>
+          <th>Član do</th>
         </tr>
       </thead>
       <tbody class="table-group-divider">
@@ -66,10 +76,19 @@
           <td>{{ player.date_of_birth }}</td>
           <td>{{ player.position }}</td>
           <td>{{ player.category }}</td>
+          <td>
+            {% if player.is_active_member %}
+              <span class="badge bg-success">Aktivan</span>
+            {% else %}
+              <span class="badge bg-danger">Neaktivan</span>
+            {% endif %}
+          </td>
+          <td>{{ player.member_since|default:"-" }}</td>
+          <td>{{ player.member_until|default:"-" }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="5" class="text-center text-muted py-4">
+          <td colspan="8" class="text-center text-muted py-4">
             Nema pronađenih igrača. 😕
           </td>
         </tr>

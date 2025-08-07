@@ -1,9 +1,17 @@
-{% extends 'main/base.html' %} {% block title %}Detalji igrača{% endblock %}
-{%block content %}
+{% extends 'main/base.html' %} 
+{% block title %}Detalji igrača{% endblock %}
+{% block content %}
 <div class="container my-4">
   <div class="card shadow border-0">
-    <div class="card-header bg-primary text-white">
+    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
       <h3 class="mb-0">👤 {{ player.first_name }} {{ player.last_name }}</h3>
+      <div>
+        {% if player.is_active_member %}
+          <span class="badge bg-success fs-6">{{ player.get_membership_status }}</span>
+        {% else %}
+          <span class="badge bg-danger fs-6">{{ player.get_membership_status }}</span>
+        {% endif %}
+      </div>
     </div>
 
     <ul class="list-group list-group-flush">
@@ -14,33 +22,99 @@
         <strong>🏅 Pozicija:</strong> {{ player.position }}
       </li>
       <li class="list-group-item">
-        <strong>📘 Kategorija:</strong> {{ player.category }}
+        <strong>📘 Trenutna kategorija:</strong> {{ player.category }}
       </li>
+
+      <!-- Membership History -->
+      {% if player.membership_history.exists %}
+      <li class="list-group-item">
+        <strong>📋 Povijest članstva:</strong>
+        <div class="mt-2">
+          <table class="table table-sm">
+            <thead>
+              <tr>
+                <th>Akcija</th>
+                <th>Od</th>
+                <th>Do</th>
+                <th>Napomena</th>
+                <th>Datum promjene</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for history in player.membership_history.all %}
+              <tr>
+                <td>
+                  {% if history.action == 'ACTIVATED' %}
+                    <span class="badge bg-success">{{ history.get_action_display }}</span>
+                  {% elif history.action == 'DEACTIVATED' %}
+                    <span class="badge bg-danger">{{ history.get_action_display }}</span>
+                  {% elif history.action == 'REACTIVATED' %}
+                    <span class="badge bg-info">{{ history.get_action_display }}</span>
+                  {% else %}
+                    <span class="badge bg-warning">{{ history.get_action_display }}</span>
+                  {% endif %}
+                </td>
+                <td>{{ history.date_from|date:"d.m.Y" }}</td>
+                <td>{{ history.date_until|date:"d.m.Y"|default:"-" }}</td>
+                <td>{{ history.notes|default:"-" }}</td>
+                <td>{{ history.created_at|date:"d.m.Y H:i" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </li>
+      {% endif %}
+
+      <!-- Category History -->
       <li class="list-group-item">
         <strong>📚 Kategorije u kojima je igrao:</strong>
         <ul class="mb-0">
           {% for record in category_history %}
-            <li>{{ record.get_category_display }}</li>
+            <li>{{ record.get_category_display }} (od {{ record.changed_at|date:"d.m.Y" }})</li>
           {% empty %}
             <li>Nema zabilježenih kategorija.</li>
           {% endfor %}
         </ul>
       </li>
       
+      <!-- Statistics -->
       <li class="list-group-item">
-        <strong>⚽ Golovi:</strong> {{ player.goals }}
-      </li>
-      <li class="list-group-item">
-        <strong>🎯 Asistencije:</strong> {{ player.assists }}
-      </li>
-      <li class="list-group-item">
-        <strong>🟨 Žuti kartoni:</strong> {{ player.yellow_cards }}
-      </li>
-      <li class="list-group-item">
-        <strong>🟥 Crveni kartoni:</strong> {{ player.red_cards }}
-      </li>
-      <li class="list-group-item">
-        <strong>📈 Nastupi:</strong> {{ player.appearances }}
+        <strong>📊 Statistika:</strong>
+        <div class="row mt-2">
+          <div class="col-md-4">
+            <div class="text-center p-2 bg-light rounded">
+              <h4 class="text-primary mb-0">{{ player.goals }}</h4>
+              <small>⚽ Golovi</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center p-2 bg-light rounded">
+              <h4 class="text-success mb-0">{{ player.assists }}</h4>
+              <small>🎯 Asistencije</small>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="text-center p-2 bg-light rounded">
+              <h4 class="text-info mb-0">{{ player.appearances }}</h4>
+              <small>📈 Nastupi</small>
+            </div>
+          </div>
+        </div>
+        <div class="row mt-2">
+          <div class="col-md-6">
+            <div class="text-center p-2 bg-light rounded">
+              <h4 class="text-warning mb-0">{{ player.yellow_cards }}</h4>
+              <small>🟨 Žuti kartoni</small>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="text-center p-2 bg-light rounded">
+              <h4 class="text-danger mb-0">{{ player.red_cards }}</h4>
+              <small>🟥 Crveni kartoni</small>
+            </div>
+          </div>
+        </div>
       </li>
     </ul>
 
@@ -51,6 +125,21 @@
       >
         ✏️ Uredi
       </a>
+      {% if player.is_active_member %}
+        <a
+          class="btn btn-outline-warning w-100 shadow-sm"
+          href="{% url 'main:player_update' player.id %}?deactivate=true"
+        >
+          ⏸️ Deaktiviraj
+        </a>
+      {% else %}
+        <a
+          class="btn btn-outline-success w-100 shadow-sm"
+          href="{% url 'main:player_update' player.id %}?activate=true"
+        >
+          ▶️ Reaktiviraj
+        </a>
+      {% endif %}
       <a
         class="btn btn-outline-danger w-100 shadow-sm"
         href="{% url 'main:player_delete' player.id %}"
