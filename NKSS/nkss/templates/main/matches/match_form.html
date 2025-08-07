@@ -1,8 +1,9 @@
 {% extends 'main/base.html' %}
-{% block title %}{% if form.instance.pk %}Uredi utakmicu{% else %}Dodaj utakmicu{% endif %}{% endblock %}
+{% block title %}Dodaj utakmicu s događajima{% endblock %}
 {% block content %}
 <div class="container my-4">
 
+  <!-- Filtar kategorije -->
   <div class="card shadow-sm border-0 mb-4">
     <div class="card-body">
       <form method="get" action="" id="category-filter" class="row g-3 align-items-end">
@@ -24,63 +25,213 @@
     </div>
   </div>
 
-  <div class="card shadow border-0">
-    <div class="card-header bg-primary text-white">
-      <h3 class="mb-0">{% if form.instance.pk %}✏️ Uredi utakmicu{% else %}➕ Dodaj utakmicu{% endif %}</h3>
-    </div>
-    <div class="card-body">
-      <form method="post" id="match-form" class="row g-4">
-        {% csrf_token %}
-        {{ form.category.as_hidden }}    
+  <!-- Glavna forma -->
+  <form method="post" id="enhanced-match-form">
+    {% csrf_token %}
+    {{ form.category.as_hidden }}
 
-        <div class="col-12">
-          <h5 class="border-bottom pb-2 mb-3">Osnovni podaci</h5>
-        </div>
-        <div class="col-md-4">
-          {{ form.date.label_tag }} {{ form.date }}
-        </div>
-        <div class="col-md-4">
-          {{ form.home_or_away.label_tag }} {{ form.home_or_away }}
-        </div>
-        <div class="col-md-4">
-          {{ form.opponent.label_tag }} {{ form.opponent }}
-        </div>
-        <div class="col-md-4">
-          {{ form.home_score.label_tag }} {{ form.home_score }}
-        </div>
-        <div class="col-md-4">
-          {{ form.away_score.label_tag }} {{ form.away_score }}
-        </div>
+    <!-- Osnovni podaci utakmice -->
+    <div class="card shadow border-0 mb-4">
+      <div class="card-header bg-primary text-white">
+        <h3 class="mb-0">⚽ Osnovni podaci utakmice</h3>
+      </div>
+      <div class="card-body">
+        <!-- Prikaz grešaka forme -->
+        {% if form.non_field_errors %}
+          <div class="alert alert-danger">
+            {{ form.non_field_errors }}
+          </div>
+        {% endif %}
 
-        <div class="col-12 pt-3">
-          <h5 class="border-bottom pb-2 mb-3">Igrači</h5>
-        </div>
-        <div class="col-12">
-          {{ form.starting_players.label_tag }}
-          <div class="player-select">
-            {{ form.starting_players }}
+        <div class="row g-4">
+          <div class="col-md-4">
+            {{ form.date.label_tag }}
+            {{ form.date }}
+            {% if form.date.errors %}
+              <div class="text-danger small">{{ form.date.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            {{ form.home_or_away.label_tag }}
+            {{ form.home_or_away }}
+            {% if form.home_or_away.errors %}
+              <div class="text-danger small">{{ form.home_or_away.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            {{ form.opponent.label_tag }}
+            {{ form.opponent }}
+            {% if form.opponent.errors %}
+              <div class="text-danger small">{{ form.opponent.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            {{ form.home_score.label_tag }}
+            {{ form.home_score }}
+            {% if form.home_score.errors %}
+              <div class="text-danger small">{{ form.home_score.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-4">
+            {{ form.away_score.label_tag }}
+            {{ form.away_score }}
+            {% if form.away_score.errors %}
+              <div class="text-danger small">{{ form.away_score.errors|striptags }}</div>
+            {% endif %}
           </div>
         </div>
-        <div class="col-12">
-          {{ form.bench_players.label_tag }}
-          <div class="player-select">
-            {{ form.bench_players }}
+      </div>
+    </div>
+
+    <!-- Igrači -->
+    <div class="card shadow border-0 mb-4">
+      <div class="card-header bg-success text-white">
+        <h3 class="mb-0">👥 Igrači</h3>
+      </div>
+      <div class="card-body">
+        <div class="row g-4">
+          <div class="col-12">
+            {{ form.starting_players.label_tag }}
+            <div class="player-select">
+              {{ form.starting_players }}
+            </div>
+            {% if form.starting_players.errors %}
+              <div class="text-danger small">{{ form.starting_players.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-12">
+            {{ form.bench_players.label_tag }}
+            <div class="player-select">
+              {{ form.bench_players }}
+            </div>
+            {% if form.bench_players.errors %}
+              <div class="text-danger small">{{ form.bench_players.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.captain.label_tag }}
+            {{ form.captain }}
+            {% if form.captain.errors %}
+              <div class="text-danger small">{{ form.captain.errors|striptags }}</div>
+            {% endif %}
+          </div>
+          <div class="col-md-6">
+            {{ form.goalkeeper.label_tag }}
+            {{ form.goalkeeper }}
+            {% if form.goalkeeper.errors %}
+              <div class="text-danger small">{{ form.goalkeeper.errors|striptags }}</div>
+            {% endif %}
           </div>
         </div>
-        <div class="col-md-6">
-          {{ form.captain.label_tag }} {{ form.captain }}
-        </div>
-        <div class="col-md-6">
-          {{ form.goalkeeper.label_tag }} {{ form.goalkeeper }}
-        </div>
-
-        <div class="col-12 d-flex justify-content-end gap-2">
-          <a href="{% url 'main:match_list' %}" class="btn btn-outline-secondary">Odustani</a>
-          <button type="submit" class="btn btn-success">💾 Spremi utakmicu</button>
-        </div>
-      </form>
+      </div>
     </div>
-  </div>
+
+    <!-- Događaji utakmice -->
+    <div class="row g-4">
+      <!-- Golovi -->
+      <div class="col-md-4">
+        <div class="card shadow border-0">
+          <div class="card-header bg-warning text-white">
+            <h5 class="mb-0">⚽ Golovi</h5>
+          </div>
+          <div class="card-body">
+            {{ goal_formset.management_form }}
+            <div id="goal-forms">
+              {% for form in goal_formset %}
+                <div class="goal-form mb-3 p-2 border rounded">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label">Igrač:</label>
+                      {{ form.player }}
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Minuta:</label>
+                      {{ form.minute }}
+                    </div>
+                  </div>
+                  {% if form.non_field_errors %}
+                    <div class="text-danger small">{{ form.non_field_errors }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Asistencije -->
+      <div class="col-md-4">
+        <div class="card shadow border-0">
+          <div class="card-header bg-info text-white">
+            <h5 class="mb-0">🎯 Asistencije</h5>
+          </div>
+          <div class="card-body">
+            {{ assist_formset.management_form }}
+            <div id="assist-forms">
+              {% for form in assist_formset %}
+                <div class="assist-form mb-3 p-2 border rounded">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label">Igrač:</label>
+                      {{ form.player }}
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Minuta:</label>
+                      {{ form.minute }}
+                    </div>
+                  </div>
+                  {% if form.non_field_errors %}
+                    <div class="text-danger small">{{ form.non_field_errors }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Kartoni -->
+      <div class="col-md-4">
+        <div class="card shadow border-0">
+          <div class="card-header bg-danger text-white">
+            <h5 class="mb-0">🟨🟥 Kartoni</h5>
+          </div>
+          <div class="card-body">
+            {{ card_formset.management_form }}
+            <div id="card-forms">
+              {% for form in card_formset %}
+                <div class="card-form mb-3 p-2 border rounded">
+                  <div class="row g-2">
+                    <div class="col-12">
+                      <label class="form-label">Igrač:</label>
+                      {{ form.player }}
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Tip:</label>
+                      {{ form.card_type }}
+                    </div>
+                    <div class="col-12">
+                      <label class="form-label">Minuta:</label>
+                      {{ form.minute }}
+                    </div>
+                  </div>
+                  {% if form.non_field_errors %}
+                    <div class="text-danger small">{{ form.non_field_errors }}</div>
+                  {% endif %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gumbovi za podnošenje -->
+    <div class="d-flex justify-content-end gap-2 mt-4">
+      <a href="{% url 'main:match_list' %}" class="btn btn-outline-secondary">Odustani</a>
+      <button type="submit" class="btn btn-success btn-lg">💾 Spremi utakmicu s događajima</button>
+    </div>
+  </form>
 </div>
 
 <style>
@@ -89,5 +240,33 @@
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     gap: 8px;
   }
+  
+  .goal-form, .assist-form, .card-form {
+    background-color: #f8f9fa;
+  }
+  
+  .form-control, .form-select {
+    border-radius: 0.375rem;
+  }
 </style>
+
+<script>
+// Dodaj JavaScript za dinamičko ažuriranje formi kada se promijeni kategorija
+document.addEventListener('DOMContentLoaded', function() {
+    const categorySelect = document.getElementById('id_category');
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            // Resetiraj sve forme kada se promijeni kategorija
+            const forms = document.querySelectorAll('.goal-form, .assist-form, .card-form');
+            forms.forEach(form => {
+                const selects = form.querySelectorAll('select');
+                const inputs = form.querySelectorAll('input[type="number"]');
+                selects.forEach(select => select.selectedIndex = 0);
+                inputs.forEach(input => input.value = '');
+            });
+        });
+    }
+});
+</script>
+
 {% endblock %}

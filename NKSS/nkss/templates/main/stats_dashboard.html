@@ -1,50 +1,216 @@
 {% extends 'main/base.html' %}
-{% block title %}Statistika igrača{% endblock %}
+{% block title %}Statistika igrača i kluba{% endblock %}
 {% block content %}
 
-<!-- Change container to container-fluid and adjust padding -->
-<div class="container-fluid py-4 px-2 px-md-3" style="max-width: 900px;">
-    <h1 class="text-center fw-bold mb-4">📊 Statistika igrača</h1>
+<div class="container-fluid py-4">
+    <h1 class="text-center fw-bold mb-4">📊 Statistika igrača i kluba</h1>
 
-    <form method="get" class="row justify-content-center mb-3">
-        <div class="col-auto">
-            <label for="category" class="col-form-label">Kategorija:</label>
+    <!-- Filteri -->
+    <div class="row justify-content-center mb-4">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="get" class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <label for="category" class="form-label fw-semibold">Kategorija:</label>
+                            <select name="category" id="category" class="form-select">
+                                <option value="">Sve kategorije</option>
+                                {% for code, name in categories %}
+                                    <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="period" class="form-label fw-semibold">Period:</label>
+                            <select name="period" id="period" class="form-select">
+                                <option value="all" {% if selected_period == 'all' %}selected{% endif %}>Od uvijek</option>
+                                <option value="year" {% if selected_period == 'year' %}selected{% endif %}>Zadnjih godinu dana</option>
+                                <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Zadnjih mjesec dana</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-primary w-100">🔍 Filtriraj</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
-        <div class="col-auto">
-            <select name="category" id="category" class="form-select" onchange="this.form.submit()">
-                <option value="">Sve</option>
-                {% for code, name in categories %}
-                    <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-    </form>
-
-    <div class="d-flex justify-content-center gap-2 mb-4">
-        <button onclick="showChart('goals')" class="btn btn-primary">Golovi</button>
-        <button onclick="showChart('assists')" class="btn btn-success">Asistencije</button>
-        <button onclick="showChart('appearances')" class="btn btn-secondary">Nastupi</button>
     </div>
 
-    <div class="card shadow py-4 px-3 px-md-4">
-      <div class="chart-container" style="width: 100%; margin: auto;">
-          <canvas id="playerChart"></canvas>
-      </div>
+    <!-- Prikaz trenutnih filtera -->
+    <div class="text-center mb-4">
+        <h5 class="text-muted">
+            {% if selected_category %}
+                {{ selected_category }} • 
+            {% endif %}
+            {{ period_label }}
+        </h5>
+    </div>
+
+    <!-- STATISTIKE KLUBA -->
+    <div class="card shadow mb-5">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">🏆 Statistike kluba</h4>
+        </div>
+        <div class="card-body">
+            <div class="row g-4">
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h3 class="text-primary">{{ club_stats.total_matches }}</h3>
+                        <p class="mb-0">Ukupno utakmica</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                        <h3 class="text-success">{{ club_stats.wins }}</h3>
+                        <p class="mb-0">Pobjede ({{ club_stats.win_percentage }}%)</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
+                        <h3 class="text-warning">{{ club_stats.draws }}</h3>
+                        <p class="mb-0">Neriješeni</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
+                        <h3 class="text-danger">{{ club_stats.losses }}</h3>
+                        <p class="mb-0">Porazi</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-info bg-opacity-10 rounded">
+                        <h3 class="text-info">{{ club_stats.total_goals_scored }}</h3>
+                        <p class="mb-0">Postignuti golovi</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
+                        <h3 class="text-secondary">{{ club_stats.total_goals_conceded }}</h3>
+                        <p class="mb-0">Primljeni golovi</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                        <h3 class="text-success">{{ club_stats.goal_difference|add:"+0" }}</h3>
+                        <p class="mb-0">Razlika golova</p>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h3 class="text-dark">{{ club_stats.avg_goals_scored }}</h3>
+                        <p class="mb-0">Prosjek golova/utakmica</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistike po kategorijama (ako nisu filtrirane) -->
+    {% if not selected_category and category_stats %}
+    <div class="card shadow mb-5">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">📈 Statistike po kategorijama</h4>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Kategorija</th>
+                            <th>Utakmice</th>
+                            <th>Pobjede</th>
+                            <th>Golovi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in category_stats %}
+                        <tr>
+                            <td><strong>{{ stat.category }}</strong></td>
+                            <td>{{ stat.matches }}</td>
+                            <td>{{ stat.wins }}</td>
+                            <td>{{ stat.goals }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Gumbovi za odabir grafova -->
+    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
+        <button onclick="showChart('goals')" class="btn btn-primary">⚽ Golovi</button>
+        <button onclick="showChart('assists')" class="btn btn-success">🎯 Asistencije</button>
+        <button onclick="showChart('appearances')" class="btn btn-secondary">📅 Nastupi</button>
+        <button onclick="showChart('yellow_cards')" class="btn btn-warning">🟨 Žuti kartoni</button>
+        <button onclick="showChart('red_cards')" class="btn btn-danger">🟥 Crveni kartoni</button>
+    </div>
+
+    <!-- Graf -->
+    <div class="card shadow py-4 px-3">
+        <div class="chart-container" style="width: 100%; max-width: 1000px; margin: auto;">
+            <canvas id="playerChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Legende -->
+    <div class="row mt-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">🏆 Top 5 strijelaca</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="list-group list-group-numbered list-group-flush">
+                        {% for player in goals|slice:":5" %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ player.name }}</span>
+                            <span class="badge bg-primary">{{ player.value }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted">Nema podataka</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">🎯 Top 5 asistenta</h5>
+                </div>
+                <div class="card-body">
+                    <ol class="list-group list-group-numbered list-group-flush">
+                        {% for player in assists|slice:":5" %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>{{ player.name }}</span>
+                            <span class="badge bg-success">{{ player.value }}</span>
+                        </li>
+                        {% empty %}
+                        <li class="list-group-item text-muted">Nema podataka</li>
+                        {% endfor %}
+                    </ol>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<!-- Rest of your JavaScript remains the same -->
 <script>
     const dataSets = {
         goals: {{ goals|safe }},
         assists: {{ assists|safe }},
         appearances: {{ appearances|safe }},
+        yellow_cards: {{ yellow_cards|safe }},
+        red_cards: {{ red_cards|safe }},
     };
 
     const colors = [
-        '#EF4444', '#3B82F6', '#10B981', '#F59E0B',
-        '#6366F1', '#EC4899', '#8B5CF6', '#22D3EE',
-        '#F97316', '#84CC16'
+        '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#6366F1', 
+        '#EC4899', '#8B5CF6', '#22D3EE', '#F97316', '#84CC16',
+        '#F43F5E', '#06B6D4', '#8B5A2B', '#059669', '#7C3AED'
     ];
 
     const ctx = document.getElementById('playerChart').getContext('2d');
@@ -56,6 +222,15 @@
         const values = data.map(item => item.value);
         const backgroundColors = colors.slice(0, labels.length);
 
+        let chartTitle = '';
+        switch(type) {
+            case 'goals': chartTitle = 'Golovi'; break;
+            case 'assists': chartTitle = 'Asistencije'; break;
+            case 'appearances': chartTitle = 'Nastupi'; break;
+            case 'yellow_cards': chartTitle = 'Žuti kartoni'; break;
+            case 'red_cards': chartTitle = 'Crveni kartoni'; break;
+        }
+
         if (chart) chart.destroy();
 
         chart = new Chart(ctx, {
@@ -63,13 +238,14 @@
             data: {
                 labels: labels,
                 datasets: [{
-                    label: type.charAt(0).toUpperCase() + type.slice(1),
+                    label: chartTitle,
                     data: values,
                     backgroundColor: backgroundColors,
                 }]
             },
             options: {
                 responsive: true,
+                maintainAspectRatio: false,
                 scales: {
                     y: {
                         beginAtZero: true,
@@ -77,13 +253,39 @@
                     }
                 },
                 plugins: {
+                    title: {
+                        display: true,
+                        text: chartTitle,
+                        font: { size: 16 }
+                    },
                     legend: { display: false }
                 }
             }
         });
     }
 
+    // Prikaži golove po defaultu
     showChart('goals');
+
+    // Auto-submit forme kada se promijeni vrijednost
+    document.getElementById('category').addEventListener('change', function() {
+        this.form.submit();
+    });
+    document.getElementById('period').addEventListener('change', function() {
+        this.form.submit();
+    });
 </script>
+
+<style>
+    .chart-container {
+        height: 400px;
+    }
+    
+    @media (max-width: 768px) {
+        .chart-container {
+            height: 300px;
+        }
+    }
+</style>
 
 {% endblock %}

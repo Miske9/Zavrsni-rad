@@ -1,5 +1,6 @@
+from datetime import timedelta
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Count
+from django.db.models import Q, Sum, Avg, Count, F
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 from django.utils import timezone
@@ -9,7 +10,9 @@ from .forms import *
 def index(request):
     return render(request, 'main/index.html')
 def player_list(request):
-    players = Player.objects.all().order_by('category', 'last_name')
+
+    players = Player.objects.all() 
+    players = players.order_by('category', 'last_name')
 
     category = request.GET.get('category')
     first_name = request.GET.get('first_name')
@@ -38,7 +41,7 @@ def player_list(request):
             'position': position,
         },
         'categories': CATEGORIES,
-        'positions': POSITIONS
+        'positions': POSITIONS,
     })
 
 def player_detail(request, pk):
@@ -72,10 +75,19 @@ def player_update(request, pk):
             new_category = form.cleaned_data['category']
             if old_category != new_category and new_category:
                 PlayerCategoryHistory.objects.create(player=player, category=new_category)
+            
             form.save()
             return redirect('main:player_detail', pk=pk)
     else:
         form = PlayerForm(instance=player)
+        
+        # Provjeri URL parametre za brže mijenjanje statusa
+        if request.GET.get('deactivate') == 'true':
+            form.initial['is_active_member'] = False
+        elif request.GET.get('activate') == 'true':
+            form.initial['is_active_member'] = True
+            form.initial['member_until'] = None  # Ukloni datum završetka
+            
     return render(request, 'main/players/player_form.html', {'form': form})
 
 def player_delete(request, pk):
@@ -87,44 +99,146 @@ def player_delete(request, pk):
 
 def stats_dashboard(request):
     selected_category = request.GET.get('category', '') 
-
+    selected_period = request.GET.get('period', 'all')  # 'month', 'year', 'all'
+    
+    # Izračunaj datum ovisno o odabranom periodu
+    today = date.today()
+    date_filter = None
+    
+    if selected_period == 'month':
+        date_filter = today - timedelta(days=30)
+        period_label = "Zadnjih 30 dana"
+    elif selected_period == 'year': 
+        date_filter = today - timedelta(days=365)
+        period_label = "Zadnjih godinu dana"
+    else:
+        period_label = "Od uvijek"
+    
+    # Filtriraj utakmice po periodu
+    matches = Match.objects.all()
+    if date_filter:
+        matches = matches.filter(date__gte=date_filter)
+    if selected_category:
+        matches = matches.filter(category=selected_category)
+    
+    # Filtriraj igrače po kategoriji
     players = Player.objects.all()
     if selected_category:
         players = players.filter(category=selected_category)
-
-    goals = (
-        Goal.objects.filter(player__in=players)
-        .values('player__id', 'player__first_name', 'player__last_name')
+    
+    # Golovi - samo iz utakmica u odabranom periodu
+    goals_queryset = (
+        Goal.objects.filter(match__in=matches)
+        .values('player__id', 'player__first_name', 'player__last_name', 'player__category')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:15]  # Povećao na 15 da pokažem više igrača
+    )
+    
+    # Asistencije - samo iz utakmica u odabranom periodu
+    assists_queryset = (
+        Assist.objects.filter(match__in=matches)
+        .values('player__id', 'player__first_name', 'player__last_name', 'player__category')
+        .annotate(total=Count('id'))
+        .order_by('-total')[:15]
+    )
+    
+    # Nastupi - brojimo koliko je svaki igrač igrao u odabranom periodu
+    appearances_queryset = []
+    for player in players:
+        # Broj nastupa u odabranom periodu
+        player_matches = matches.filter(
+            Q(starting_players=player) | Q(bench_players=player)
+        ).distinct()
+        
+        if player_matches.exists():
+            appearances_queryset.append({
+                'player__id': player.id,
+                'player__first_name': player.first_name, 
+                'player__last_name': player.last_name,
+                'player__category': player.category,
+                'total': player_matches.count()
+            })
+    
+    # Sortiraj po broju nastupa
+    appearances_queryset = sorted(appearances_queryset, key=lambda x: x['total'], reverse=True)[:15]
+    
+    # Kartoni - samo iz utakmica u odabranom periodu
+    yellow_cards_queryset = (
+        Card.objects.filter(match__in=matches, card_type='Y')
+        .values('player__id', 'player__first_name', 'player__last_name', 'player__category')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]
     )
-
-    assists = (
-        Assist.objects.filter(player__in=players)
-        .values('player__id', 'player__first_name', 'player__last_name')
+    
+    red_cards_queryset = (
+        Card.objects.filter(match__in=matches, card_type='R') 
+        .values('player__id', 'player__first_name', 'player__last_name', 'player__category')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]
     )
-
-    appearances = (
-        players.order_by('-appearances')
-        .values('id', 'first_name', 'last_name', 'appearances')[:10]
-    )
-
+    
+    # STATISTIKE KLUBA
+    total_matches = matches.count()
+    total_goals_scored = Goal.objects.filter(match__in=matches).count()
+    total_goals_conceded = matches.aggregate(Sum('away_score'))['away_score__sum'] or 0
+    
+    # Pobjede, neriješeni, porazi (pretpostavljam da je home_score naš rezultat)
+    wins = matches.filter(home_score__gt=F('away_score')).count() if matches else 0
+    draws = matches.filter(home_score=F('away_score')).count() if matches else 0
+    losses = matches.filter(home_score__lt=F('away_score')).count() if matches else 0
+    
+    # Prosjeci
+    avg_goals_scored = round(total_goals_scored / total_matches, 2) if total_matches > 0 else 0
+    avg_goals_conceded = round(total_goals_conceded / total_matches, 2) if total_matches > 0 else 0
+    
+    # Statistike po kategorijama
+    category_stats = []
+    if not selected_category:  # Ako nije odabrana specifična kategorija, prikaži sve
+        for cat_code, cat_name in CATEGORIES:
+            cat_matches = matches.filter(category=cat_code)
+            if cat_matches.exists():
+                cat_goals = Goal.objects.filter(match__in=cat_matches).count()
+                category_stats.append({
+                    'category': cat_name,
+                    'matches': cat_matches.count(),
+                    'goals': cat_goals,
+                    'wins': cat_matches.filter(home_score__gt=F('away_score')).count(),
+                })
+    
     def format_data(queryset, value_field='total'):
         return [
             {
                 "name": f"{item.get('first_name') or item.get('player__first_name')} {item.get('last_name') or item.get('player__last_name')}",
-                "value": item.get(value_field) or 0
+                "value": item.get(value_field) or 0,
+                "category": item.get('category') or item.get('player__category', '')
             } for item in queryset
         ]
-
+    
     context = {
         'categories': CATEGORIES,
         'selected_category': selected_category,
-        'goals': format_data(goals),
-        'assists': format_data(assists),
-        'appearances': format_data(appearances, value_field='appearances'),
+        'selected_period': selected_period,
+        'period_label': period_label,
+        'goals': format_data(goals_queryset),
+        'assists': format_data(assists_queryset),
+        'appearances': format_data(appearances_queryset),
+        'yellow_cards': format_data(yellow_cards_queryset),
+        'red_cards': format_data(red_cards_queryset),
+        
+        # Statistike kluba
+        'club_stats': {
+            'total_matches': total_matches,
+            'wins': wins,
+            'draws': draws, 
+            'losses': losses,
+            'win_percentage': round((wins / total_matches * 100), 1) if total_matches > 0 else 0,
+            'total_goals_scored': total_goals_scored,
+            'total_goals_conceded': total_goals_conceded,
+            'goal_difference': total_goals_scored - total_goals_conceded,
+            'avg_goals_scored': avg_goals_scored,
+            'avg_goals_conceded': avg_goals_conceded,
+        },
+        'category_stats': category_stats,
     }
 
     return render(request, 'main/stats_dashboard.html', context)
@@ -165,13 +279,13 @@ def match_detail(request, pk):
     else:
         form = MatchEventForm()
 
-    goal_form = GoalForm()
+    goal_form = GoalEventForm()
     goal_form.fields['player'].queryset = valid_players.distinct()
 
-    assist_form = AssistForm()
+    assist_form = AssistEventForm()
     assist_form.fields['player'].queryset = valid_players.distinct()
 
-    card_form = CardForm()
+    card_form = CardEventForm()
     card_form.fields['player'].queryset = valid_players.distinct()
 
     return render(request, "main/matches/match_detail.html", {
@@ -187,18 +301,98 @@ def match_detail(request, pk):
 def match_create(request):
     if request.method == "POST":
         form = MatchForm(request.POST)
+        
+        # Dobijemo igrače za formset-ove
+        valid_players = Player.objects.none()
+        if 'category' in request.POST:
+            category = request.POST.get('category')
+            valid_players = Player.objects.filter(category=category)
+        
+        # Kreiraj formset-ove s validnim igračima
+        goal_formset = GoalFormSet(request.POST, prefix='goals', 
+                                  form_kwargs={'valid_players': valid_players})
+        assist_formset = AssistFormSet(request.POST, prefix='assists',
+                                     form_kwargs={'valid_players': valid_players})
+        card_formset = CardFormSet(request.POST, prefix='cards',
+                                  form_kwargs={'valid_players': valid_players})
+        
         if form.is_valid():
-            match = form.save()
-            for player in form.cleaned_data['starting_players']:
-                player.appearances += 1
-                player.save()
-            for player in form.cleaned_data['bench_players']:
-                player.appearances += 1
-                player.save()
-            return redirect("main:match_list")
+            # Validacija događaja
+            event_errors = form.validate_events(goal_formset, assist_formset, card_formset)
+            
+            if not event_errors and goal_formset.is_valid() and assist_formset.is_valid() and card_formset.is_valid():
+                # Spremi utakmicu
+                match = form.save()
+                
+                # Dodaj nastupe igračima
+                for player in form.cleaned_data['starting_players']:
+                    player.appearances += 1
+                    player.save()
+                for player in form.cleaned_data['bench_players']:
+                    player.appearances += 1
+                    player.save()
+                
+                # Spremi golove
+                for goal_form in goal_formset:
+                    if goal_form.is_valid() and goal_form.cleaned_data.get('player'):
+                        goal_data = goal_form.cleaned_data
+                        Goal.objects.create(
+                            match=match,
+                            player=goal_data['player'],
+                            minute=goal_data['minute']
+                        )
+                        # Ažuriraj statistike igrača
+                        goal_data['player'].goals += 1
+                        goal_data['player'].save()
+                
+                # Spremi asistencije
+                for assist_form in assist_formset:
+                    if assist_form.is_valid() and assist_form.cleaned_data.get('player'):
+                        assist_data = assist_form.cleaned_data
+                        Assist.objects.create(
+                            match=match,
+                            player=assist_data['player'],
+                            minute=assist_data['minute']
+                        )
+                        # Ažuriraj statistike igrača
+                        assist_data['player'].assists += 1
+                        assist_data['player'].save()
+                
+                # Spremi kartone
+                for card_form in card_formset:
+                    if card_form.is_valid() and card_form.cleaned_data.get('player'):
+                        card_data = card_form.cleaned_data
+                        Card.objects.create(
+                            match=match,
+                            player=card_data['player'],
+                            card_type=card_data['card_type'],
+                            minute=card_data['minute']
+                        )
+                        # Ažuriraj statistike igrača
+                        if card_data['card_type'] == 'Y':
+                            card_data['player'].yellow_cards += 1
+                        elif card_data['card_type'] == 'R':
+                            card_data['player'].red_cards += 1
+                        card_data['player'].save()
+                
+                return redirect("main:match_detail", pk=match.pk)
+            else:
+                # Dodaj greške u kontekst
+                for error in event_errors:
+                    form.add_error(None, error)
     else:
-        form = MatchForm(request.GET or None)  
-    return render(request, "main/matches/match_form.html", {"form": form})
+        form = MatchForm(request.GET or None)
+        valid_players = Player.objects.none()
+        goal_formset = GoalFormSet(prefix='goals', form_kwargs={'valid_players': valid_players})
+        assist_formset = AssistFormSet(prefix='assists', form_kwargs={'valid_players': valid_players})
+        card_formset = CardFormSet(prefix='cards', form_kwargs={'valid_players': valid_players})
+    
+    return render(request, "main/matches/match_form.html", {
+        "form": form,
+        "goal_formset": goal_formset,
+        "assist_formset": assist_formset,
+        "card_formset": card_formset,
+    })
 
 
 def match_update(request, pk):
@@ -211,9 +405,6 @@ def match_update(request, pk):
     else:
         form = MatchForm(instance=match)
     return render(request, "main/matches/match_form.html", {"form": form})
-
-
-from django.shortcuts import get_object_or_404, redirect, render
 
 def match_delete(request, pk):
     match = get_object_or_404(Match, pk=pk)

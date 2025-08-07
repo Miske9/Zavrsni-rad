@@ -92,6 +92,7 @@ class MatchForm(forms.ModelForm):
             'starting_players': forms.CheckboxSelectMultiple,
             'bench_players': forms.CheckboxSelectMultiple,
         }
+
     def __init__(self, *args, **kwargs):
         super(MatchForm, self).__init__(*args, **kwargs)
 
@@ -113,12 +114,15 @@ class MatchForm(forms.ModelForm):
             self.fields['bench_players'].queryset = Player.objects.none()
             self.fields['captain'].queryset = Player.objects.none()
             self.fields['goalkeeper'].queryset = Player.objects.none()
+
     def clean(self):
         cleaned_data = super().clean()
         starters = cleaned_data.get("starting_players")
         bench = cleaned_data.get("bench_players")
         captain = cleaned_data.get("captain")
         goalkeeper = cleaned_data.get("goalkeeper")
+        home_score = cleaned_data.get("home_score", 0)
+        away_score = cleaned_data.get("away_score", 0)
 
         if starters and len(starters) != 11:
             raise ValidationError("Točno 11 igrača mora biti u startnoj postavi.")
@@ -129,6 +133,56 @@ class MatchForm(forms.ModelForm):
         if goalkeeper and goalkeeper not in starters:
             raise ValidationError("Golman mora biti u startnoj postavi.")
 
+        return cleaned_data
+
+    def validate_events(self, goal_formset, assist_formset, card_formset):
+        """Validira događaje utakmice"""
+        errors = []
+        
+        home_score = self.cleaned_data.get('home_score', 0)
+        away_score = self.cleaned_data.get('away_score', 0)
+        
+        # Provjeri broj golova
+        goals = []
+        for form in goal_formset:
+            if form.is_valid() and form.cleaned_data.get('player'):
+                goals.append(form.cleaned_data)
+        
+        # Samo naši golovi se trebaju jednati s home_score (ako smo domaćin) ili away_score mora biti protivnikov
+        if len(goals) != home_score:
+            errors.append(f"Broj unesenih golova ({len(goals)}) mora odgovarati rezultatu ({home_score})")
+        
+        # Provjeri asistencije
+        assists = []
+        for form in assist_formset:
+            if form.is_valid() and form.cleaned_data.get('player'):
+                assists.append(form.cleaned_data)
+        
+        if len(assists) > len(goals):
+            errors.append("Broj asistencija ne može biti veći od broja golova")
+        
+        # Provjeri da svaka asistencija ima odgovarajući gol u istoj minuti
+        goal_minutes = [goal['minute'] for goal in goals]
+        for assist in assists:
+            if assist['minute'] not in goal_minutes:
+                errors.append(f"Asistencija u {assist['minute']}. minuti nema odgovarajući gol")
+        
+        # Provjeri da igrač ne može asistirati svoj vlastiti gol u istoj minuti
+        for assist in assists:
+            same_minute_goals = [g for g in goals if g['minute'] == assist['minute']]
+            for goal in same_minute_goals:
+                if goal['player'] == assist['player']:
+                    errors.append(f"Igrač ne može asistirati svoj vlastiti gol u {assist['minute']}. minuti")
+                    
+        # if starters and bench:
+          #  overlap = set(starters) & set(bench)
+           # if overlap:
+           #     player_names = [f"{p.first_name} {p.last_name}" for p in overlap]
+           #     raise ValidationError(f"Igrači ne mogu biti istovremeno u startnoj postavi i na klupi: {', '.join(player_names)}")
+
+        
+        return errors
+    
 class MatchEventForm(forms.ModelForm):
     class Meta:
         model = MatchEvent
@@ -139,43 +193,43 @@ class MatchEventForm(forms.ModelForm):
             'event_type': 'Vrsta događaja',
         }
         
-class GoalForm(forms.ModelForm):
-    class Meta:
-        model = Goal
-        fields = ['player', 'minute']
-        labels = {
-            'player': 'Strijelac',
-            'minute': 'Minuta',
-        }
-        widgets = {
-            'minute': forms.NumberInput(attrs={'min': 0}),
-        }
+class GoalEventForm(forms.Form):
+    player = forms.ModelChoiceField(queryset=Player.objects.none(), required=False)
+    minute = forms.IntegerField(min_value=1, max_value=120, required=False, 
+                               widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'}))
+    
+    def __init__(self, *args, **kwargs):
+        valid_players = kwargs.pop('valid_players', Player.objects.none())
+        super().__init__(*args, **kwargs)
+        self.fields['player'].queryset = valid_players
+        self.fields['player'].widget.attrs.update({'class': 'form-select'})
 
-class AssistForm(forms.ModelForm):
-    class Meta:
-        model = Assist
-        fields = ['player', 'minute']
-        labels = {
-            'player': 'Asistent',
-            'minute': 'Minuta',
-        }
-        widgets = {
-            'minute': forms.NumberInput(attrs={'min': 0}),
-        }
+class AssistEventForm(forms.Form):
+    player = forms.ModelChoiceField(queryset=Player.objects.none(), required=False)
+    minute = forms.IntegerField(min_value=1, max_value=120, required=False,
+                               widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'}))
+    
+    def __init__(self, *args, **kwargs):
+        valid_players = kwargs.pop('valid_players', Player.objects.none())
+        super().__init__(*args, **kwargs)
+        self.fields['player'].queryset = valid_players
+        self.fields['player'].widget.attrs.update({'class': 'form-select'})
 
-class CardForm(forms.ModelForm):
-    class Meta:
-        model = Card
-        fields = ['player', 'card_type', 'minute']
-        labels = {
-            'player': 'Igrač',
-            'card_type': 'Vrsta kartona',
-            'minute': 'Minuta',
-        }
-        widgets = {
-            'minute': forms.NumberInput(attrs={'min': 0}),
-            'card_type': forms.Select
-        }
+class CardEventForm(forms.Form):
+    player = forms.ModelChoiceField(queryset=Player.objects.none(), required=False)
+    card_type = forms.ChoiceField(choices=CARD_TYPES, required=False,
+                                 widget=forms.Select(attrs={'class': 'form-select'}))
+    minute = forms.IntegerField(min_value=1, max_value=120, required=False,
+                               widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'}))
+    
+    def __init__(self, *args, **kwargs):
+        valid_players = kwargs.pop('valid_players', Player.objects.none())
+        super().__init__(*args, **kwargs)
+        self.fields['player'].queryset = valid_players
+        
+GoalFormSet = forms.formset_factory(GoalEventForm, extra=5, max_num=10)
+AssistFormSet = forms.formset_factory(AssistEventForm, extra=5, max_num=10)
+CardFormSet = forms.formset_factory(CardEventForm, extra=5, max_num=10)
         
 class StaffMemberForm(forms.ModelForm):
     class Meta:
