@@ -11,7 +11,6 @@ def index(request):
     return render(request, 'main/index.html')
 def player_list(request):
 
-    players = Player.objects.all() 
     players = players.order_by('category', 'last_name')
 
     category = request.GET.get('category')
