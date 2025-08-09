@@ -1,4 +1,5 @@
 from datetime import date
+from django.utils import timezone
 from django import forms
 from .models import *
 from django.core.exceptions import ValidationError
@@ -127,17 +128,22 @@ class PlayerForm(forms.ModelForm):
         return player
 
 class MatchForm(forms.ModelForm):
-    date = forms.DateField(widget=forms.DateInput(attrs={'type': 'date'}), label="Datum utakmice")
+    date = forms.DateField(
+        widget=forms.DateInput(attrs={'type': 'date'}), 
+        label="Datum utakmice",
+        required=False  # Make it not required initially to avoid browser validation
+    )
     starting_players = forms.ModelMultipleChoiceField(
-        queryset=Player.objects.none(),  # Ovo će se ažurirati u __init__
+        queryset=Player.objects.all(),
         widget=forms.CheckboxSelectMultiple,
-        label="Startna postava (točno 11)"
+        label="Startna postava",
+        required=False  # Make it not required initially
     )
     bench_players = forms.ModelMultipleChoiceField(
-        queryset=Player.objects.none(),  # Ovo će se ažurirati u __init__
+        queryset=Player.objects.all(),
         widget=forms.CheckboxSelectMultiple,
         required=False,
-        label="Klupe (max 7)"
+        label="Klupa"
     )
 
     class Meta:
@@ -155,35 +161,47 @@ class MatchForm(forms.ModelForm):
             'captain': 'Kapetan',
             'goalkeeper': 'Golman',
         }
-        widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
-            'starting_players': forms.CheckboxSelectMultiple,
-            'bench_players': forms.CheckboxSelectMultiple,
-        }
+        
+    def clean_date(self):
+        date = self.cleaned_data['date']
+        if date > timezone.localdate():
+            raise forms.ValidationError("Datum ne može biti u budućnosti.")
+        return date    
 
     def __init__(self, *args, **kwargs):
         super(MatchForm, self).__init__(*args, **kwargs)
+        
+        # Make fields not required initially to avoid browser validation
+        self.fields['home_or_away'].required = False
+        self.fields['opponent'].required = False
+        self.fields['captain'].required = False
+        self.fields['goalkeeper'].required = False
 
         category = None
 
+        # Get category from instance, data, or initial
         if self.instance and self.instance.category:
             category = self.instance.category
         elif 'category' in self.data:
             category = self.data.get('category')
+        elif self.initial.get('category'):
+            category = self.initial.get('category')
 
         if category:
-            # Filtriraj samo aktivne igrače iz određene kategorije
-            players = Player.objects.filter(
-                category=category,
-                is_active_member=True
-            ).exclude(
-                member_until__lt=date.today()
-            )
+            # Filter players by category
+            players = Player.objects.filter(category=category).order_by('last_name', 'first_name')
             self.fields['starting_players'].queryset = players
             self.fields['bench_players'].queryset = players
             self.fields['captain'].queryset = players
             self.fields['goalkeeper'].queryset = players
+            
+            # Make fields required when category is selected
+            self.fields['date'].required = True
+            self.fields['home_or_away'].required = True
+            self.fields['opponent'].required = True
+            self.fields['starting_players'].required = True
         else:
+            # No players available without category
             self.fields['starting_players'].queryset = Player.objects.none()
             self.fields['bench_players'].queryset = Player.objects.none()
             self.fields['captain'].queryset = Player.objects.none()
@@ -191,68 +209,106 @@ class MatchForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-        starters = cleaned_data.get("starting_players")
-        bench = cleaned_data.get("bench_players")
-        captain = cleaned_data.get("captain")
-        goalkeeper = cleaned_data.get("goalkeeper")
-        home_score = cleaned_data.get("home_score", 0)
-        away_score = cleaned_data.get("away_score", 0)
-
-        # Provjeri da su svi igrači aktivni članovi
-        all_players = list(starters or []) + list(bench or [])
-        if captain:
-            all_players.append(captain)
-        if goalkeeper:
-            all_players.append(goalkeeper)
+        category = cleaned_data.get("category")
+        
+        # Only validate if category is selected
+        if category:
+            starters = cleaned_data.get("starting_players")
+            bench = cleaned_data.get("bench_players")
+            captain = cleaned_data.get("captain")
+            goalkeeper = cleaned_data.get("goalkeeper")
+            home_score = cleaned_data.get("home_score", 0)
+            away_score = cleaned_data.get("away_score", 0)
             
-        for player in all_players:
-            if not player.is_current_member:
-                raise ValidationError(f"Igrač {player.first_name} {player.last_name} nije aktivan član kluba.")
+            # Required field validations
+            if not cleaned_data.get("date"):
+                self.add_error('date', "Datum utakmice je obavezan.")
+            if not cleaned_data.get("home_or_away"):
+                self.add_error('home_or_away', "Lokacija utakmice je obavezna.")
+            if not cleaned_data.get("opponent"):
+                self.add_error('opponent', "Naziv protivnika je obavezan.")
 
-        if starters and len(starters) != 11:
-            raise ValidationError("Točno 11 igrača mora biti u startnoj postavi.")
-        if bench and len(bench) > 7:
-            raise ValidationError("Najviše 7 igrača može biti na klupi.")
-        if captain and captain not in starters:
-            raise ValidationError("Kapetan mora biti u startnoj postavi.")
-        if goalkeeper and goalkeeper not in starters:
-            raise ValidationError("Golman mora biti u startnoj postavi.")
+            # Player validations
+            if starters and len(starters) != 11:
+                raise ValidationError("Točno 11 igrača mora biti u startnoj postavi.")
+            if bench and len(bench) > 7:
+                raise ValidationError("Najviše 7 igrača može biti na klupi.")
+            
+            # Check for overlapping players
+            if starters and bench:
+                overlap = set(starters) & set(bench)
+                if overlap:
+                    player_names = [f"{p.first_name} {p.last_name}" for p in overlap]
+                    raise ValidationError(f"Igrači ne mogu biti istovremeno u startnoj postavi i na klupi: {', '.join(player_names)}")
+            
+            if captain and starters and captain not in starters:
+                raise ValidationError("Kapetan mora biti u startnoj postavi.")
+            if goalkeeper and starters and goalkeeper not in starters:
+                raise ValidationError("Golman mora biti u startnoj postavi.")
 
         return cleaned_data
 
     def validate_events(self, goal_formset, assist_formset, card_formset):
-        """Validira događaje utakmice"""
+        """Validates match events - ensures goals match the score"""
         errors = []
         
         home_score = self.cleaned_data.get('home_score', 0)
         away_score = self.cleaned_data.get('away_score', 0)
         
-        # Provjeri broj golova
+        # Collect valid goals
         goals = []
         for form in goal_formset:
-            if form.is_valid() and form.cleaned_data.get('player'):
-                goals.append(form.cleaned_data)
+            if form.is_valid():
+                player = form.cleaned_data.get('player')
+                minute = form.cleaned_data.get('minute')
+                # Only count if both player and minute are filled
+                if player and minute:
+                    goals.append(form.cleaned_data)
         
-        # Samo naši golovi se trebaju jednati s home_score (ako smo domaćin) ili away_score mora biti protivnikov
+        # Check if number of goals matches the home score (our goals)
         if len(goals) != home_score:
-            errors.append(f"Broj unesenih golova ({len(goals)}) mora odgovarati rezultatu ({home_score})")
+            if home_score > 0:
+                errors.append(f"Broj unesenih golova ({len(goals)}) mora odgovarati našem rezultatu ({home_score})")
+            elif len(goals) > 0:
+                errors.append(f"Uneseni su golovi ({len(goals)}) ali rezultat pokazuje 0 golova")
         
-        # Provjeri asistencije
+        # Collect valid assists  
         assists = []
         for form in assist_formset:
-            if form.is_valid() and form.cleaned_data.get('player'):
-                assists.append(form.cleaned_data)
+            if form.is_valid():
+                player = form.cleaned_data.get('player')
+                minute = form.cleaned_data.get('minute')
+                # Only count if both player and minute are filled
+                if player and minute:
+                    assists.append(form.cleaned_data)
         
+        # Assists can't be more than goals
         if len(assists) > len(goals):
             errors.append("Broj asistencija ne može biti veći od broja golova")
         
-        # Provjeri da svaka asistencija ima odgovarajući gol u istoj minuti
+        # Check that each assist has a corresponding goal in the same minute
+        if assists and goals:
+            goal_minutes = [goal['minute'] for goal in goals]
+            for assist in assists:
+                if assist['minute'] not in goal_minutes:
+                    errors.append(f"Asistencija u {assist['minute']}. minuti nema odgovarajući gol")
+            
+            # Check that a player can't assist their own goal in the same minute
+            for assist in assists:
+                same_minute_goals = [g for g in goals if g['minute'] == assist['minute']]
+                for goal in same_minute_goals:
+                    if goal['player'] == assist['player']:
+                        errors.append(f"Igrač ne može asistirati svoj vlastiti gol u {assist['minute']}. minuti")
+        
+        return errors
+        
+        # Check that each assist has a corresponding goal in the same minute
         goal_minutes = [goal['minute'] for goal in goals]
         for assist in assists:
             if assist['minute'] not in goal_minutes:
                 errors.append(f"Asistencija u {assist['minute']}. minuti nema odgovarajući gol")
         
-        # Provjeri da igrač ne može asistirati svoj vlastiti gol u istoj minuti
+        # Check that a player can't assist their own goal in the same minute
         for assist in assists:
             same_minute_goals = [g for g in goals if g['minute'] == assist['minute']]
             for goal in same_minute_goals:
@@ -272,57 +328,67 @@ class MatchEventForm(forms.ModelForm):
         }
         
 class GoalEventForm(forms.Form):
-    player = forms.ModelChoiceField(queryset=Player.objects.none(), required=False)
-    minute = forms.IntegerField(min_value=1, max_value=120, required=False, 
-                               widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'}))
+    player = forms.ModelChoiceField(
+        queryset=Player.objects.none(), 
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    minute = forms.IntegerField(
+        min_value=1, 
+        max_value=120, 
+        required=False, 
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'})
+    )
     
     def __init__(self, *args, **kwargs):
         valid_players = kwargs.pop('valid_players', Player.objects.none())
         super().__init__(*args, **kwargs)
-        # Filtriraj samo aktivne igrače
-        if valid_players:
-            active_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
-            self.fields['player'].queryset = active_players
-        else:
-            self.fields['player'].queryset = Player.objects.none()
-        self.fields['player'].widget.attrs.update({'class': 'form-select'})
+        self.fields['player'].queryset = valid_players
 
 class AssistEventForm(forms.Form):
-    player = forms.ModelChoiceField(queryset=Player.objects.none(), required=False)
-    minute = forms.IntegerField(min_value=1, max_value=120, required=False,
-                               widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'}))
+    player = forms.ModelChoiceField(
+        queryset=Player.objects.none(), 
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    minute = forms.IntegerField(
+        min_value=1, 
+        max_value=120, 
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'})
+    )
     
     def __init__(self, *args, **kwargs):
         valid_players = kwargs.pop('valid_players', Player.objects.none())
         super().__init__(*args, **kwargs)
-        # Filtriraj samo aktivne igrače
-        if valid_players:
-            active_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
-            self.fields['player'].queryset = active_players
-        else:
-            self.fields['player'].queryset = Player.objects.none()
-        self.fields['player'].widget.attrs.update({'class': 'form-select'})
+        self.fields['player'].queryset = valid_players
 
 class CardEventForm(forms.Form):
-    player = forms.ModelChoiceField(queryset=Player.objects.none(), required=False)
-    card_type = forms.ChoiceField(choices=CARD_TYPES, required=False,
-                                 widget=forms.Select(attrs={'class': 'form-select'}))
-    minute = forms.IntegerField(min_value=1, max_value=120, required=False,
-                               widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'}))
+    player = forms.ModelChoiceField(
+        queryset=Player.objects.none(), 
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    card_type = forms.ChoiceField(
+        choices=[('', '-- Odaberi --')] + list(CARD_TYPES), 
+        required=False,
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    minute = forms.IntegerField(
+        min_value=1, 
+        max_value=120, 
+        required=False,
+        widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'})
+    )
     
     def __init__(self, *args, **kwargs):
         valid_players = kwargs.pop('valid_players', Player.objects.none())
         super().__init__(*args, **kwargs)
-        # Filtriraj samo aktivne igrače
-        if valid_players:
-            active_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
-            self.fields['player'].queryset = active_players
-        else:
-            self.fields['player'].queryset = Player.objects.none()
+        self.fields['player'].queryset = valid_players
         
-GoalFormSet = forms.formset_factory(GoalEventForm, extra=5, max_num=10)
-AssistFormSet = forms.formset_factory(AssistEventForm, extra=5, max_num=10)
-CardFormSet = forms.formset_factory(CardEventForm, extra=5, max_num=10)
+GoalFormSet = forms.formset_factory(GoalEventForm, extra=1, max_num=10, can_delete=True)
+AssistFormSet = forms.formset_factory(AssistEventForm, extra=1, max_num=10, can_delete=True)
+CardFormSet = forms.formset_factory(CardEventForm, extra=1, max_num=10, can_delete=True)
         
 class StaffMemberForm(forms.ModelForm):
     class Meta:

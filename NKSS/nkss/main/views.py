@@ -253,13 +253,6 @@ def stats_dashboard(request):
 
     return render(request, 'main/stats_dashboard.html', context)
 
-def player_delete(request, pk):
-    player = get_object_or_404(Player, pk=pk)
-    if request.method == 'POST':
-        player.delete()
-        return redirect('main:player_list')
-    return render(request, 'main/players/player_confirm_delete.html', {'player': player})
-
 def match_list(request):
     matches = Match.objects.all().order_by('-date')
 
@@ -318,43 +311,51 @@ def match_detail(request, pk):
 
 
 def match_create(request):
+    # Get category from GET or POST
+    category = request.GET.get('category') or request.POST.get('category')
+    
+    # Get valid players for the category
+    valid_players = Player.objects.none()
+    if category:
+        valid_players = Player.objects.filter(category=category)
+    
     if request.method == "POST":
         form = MatchForm(request.POST)
         
-        # Dobijemo igrače za formset-ove - samo aktivne
-        valid_players = Player.objects.none()
-        if 'category' in request.POST:
-            category = request.POST.get('category')
-            valid_players = Player.objects.filter(
-                category=category,
-                is_active_member=True
-            ).exclude(member_until__lt=date.today())
-        
-        # Kreiraj formset-ove s validnim igračima
-        goal_formset = GoalFormSet(request.POST, prefix='goals', 
-                                  form_kwargs={'valid_players': valid_players})
-        assist_formset = AssistFormSet(request.POST, prefix='assists',
-                                     form_kwargs={'valid_players': valid_players})
-        card_formset = CardFormSet(request.POST, prefix='cards',
-                                  form_kwargs={'valid_players': valid_players})
+        # Create formsets with valid players
+        goal_formset = GoalFormSet(
+            request.POST, 
+            prefix='goals',
+            form_kwargs={'valid_players': valid_players}
+        )
+        assist_formset = AssistFormSet(
+            request.POST, 
+            prefix='assists',
+            form_kwargs={'valid_players': valid_players}
+        )
+        card_formset = CardFormSet(
+            request.POST, 
+            prefix='cards',
+            form_kwargs={'valid_players': valid_players}
+        )
         
         if form.is_valid():
-            # Validacija događaja
+            # Validate events
             event_errors = form.validate_events(goal_formset, assist_formset, card_formset)
             
             if not event_errors and goal_formset.is_valid() and assist_formset.is_valid() and card_formset.is_valid():
-                # Spremi utakmicu
+                # Save match
                 match = form.save()
                 
-                # Dodaj nastupe igračima
+                # Update player appearances
                 for player in form.cleaned_data['starting_players']:
                     player.appearances += 1
                     player.save()
-                for player in form.cleaned_data['bench_players']:
+                for player in form.cleaned_data.get('bench_players', []):
                     player.appearances += 1
                     player.save()
                 
-                # Spremi golove
+                # Save goals
                 for goal_form in goal_formset:
                     if goal_form.is_valid() and goal_form.cleaned_data.get('player'):
                         goal_data = goal_form.cleaned_data
@@ -363,11 +364,10 @@ def match_create(request):
                             player=goal_data['player'],
                             minute=goal_data['minute']
                         )
-                        # Ažuriraj statistike igrača
                         goal_data['player'].goals += 1
                         goal_data['player'].save()
                 
-                # Spremi asistencije
+                # Save assists
                 for assist_form in assist_formset:
                     if assist_form.is_valid() and assist_form.cleaned_data.get('player'):
                         assist_data = assist_form.cleaned_data
@@ -376,11 +376,10 @@ def match_create(request):
                             player=assist_data['player'],
                             minute=assist_data['minute']
                         )
-                        # Ažuriraj statistike igrača
                         assist_data['player'].assists += 1
                         assist_data['player'].save()
                 
-                # Spremi kartone
+                # Save cards
                 for card_form in card_formset:
                     if card_form.is_valid() and card_form.cleaned_data.get('player'):
                         card_data = card_form.cleaned_data
@@ -390,7 +389,6 @@ def match_create(request):
                             card_type=card_data['card_type'],
                             minute=card_data['minute']
                         )
-                        # Ažuriraj statistike igrača
                         if card_data['card_type'] == 'Y':
                             card_data['player'].yellow_cards += 1
                         elif card_data['card_type'] == 'R':
@@ -399,15 +397,30 @@ def match_create(request):
                 
                 return redirect("main:match_detail", pk=match.pk)
             else:
-                # Dodaj greške u kontekst
+                # Add errors to form
                 for error in event_errors:
                     form.add_error(None, error)
     else:
-        form = MatchForm(request.GET or None)
-        valid_players = Player.objects.none()
-        goal_formset = GoalFormSet(prefix='goals', form_kwargs={'valid_players': valid_players})
-        assist_formset = AssistFormSet(prefix='assists', form_kwargs={'valid_players': valid_players})
-        card_formset = CardFormSet(prefix='cards', form_kwargs={'valid_players': valid_players})
+        # Initialize form with category if provided
+        initial_data = {}
+        if category:
+            initial_data['category'] = category
+        
+        form = MatchForm(initial=initial_data)
+        
+        # Create empty formsets with valid players
+        goal_formset = GoalFormSet(
+            prefix='goals',
+            form_kwargs={'valid_players': valid_players}
+        )
+        assist_formset = AssistFormSet(
+            prefix='assists',
+            form_kwargs={'valid_players': valid_players}
+        )
+        card_formset = CardFormSet(
+            prefix='cards',
+            form_kwargs={'valid_players': valid_players}
+        )
     
     return render(request, "main/matches/match_form.html", {
         "form": form,
@@ -416,17 +429,77 @@ def match_create(request):
         "card_formset": card_formset,
     })
 
-
 def match_update(request, pk):
     match = get_object_or_404(Match, pk=pk)
+    valid_players = Player.objects.filter(category=match.category)
+
     if request.method == "POST":
         form = MatchForm(request.POST, instance=match)
-        if form.is_valid():
+        goal_formset = GoalFormSet(request.POST, prefix='goals', form_kwargs={'valid_players': valid_players})
+        assist_formset = AssistFormSet(request.POST, prefix='assists', form_kwargs={'valid_players': valid_players})
+        card_formset = CardFormSet(request.POST, prefix='cards', form_kwargs={'valid_players': valid_players})
+
+        if form.is_valid() and goal_formset.is_valid() and assist_formset.is_valid() and card_formset.is_valid():
             form.save()
-            return redirect("main:match_detail", pk=pk)
+
+            # Po potrebi obriši stare evente i spremi nove
+            match.goals.all().delete()
+            match.assists.all().delete()
+            match.cards.all().delete()
+
+            for gf in goal_formset:
+                if gf.cleaned_data and not gf.cleaned_data.get('DELETE'):
+                    data = {k: v for k, v in gf.cleaned_data.items() if k not in ['DELETE', 'id']}
+                    Goal.objects.create(match=match, **data)
+
+            for af in assist_formset:
+                if af.cleaned_data and not af.cleaned_data.get('DELETE'):
+                    data = {k: v for k, v in af.cleaned_data.items() if k not in ['DELETE', 'id']}
+                    Assist.objects.create(match=match, **data)
+
+            for cf in card_formset:
+                if cf.cleaned_data and not cf.cleaned_data.get('DELETE'):
+                    data = {k: v for k, v in cf.cleaned_data.items() if k not in ['DELETE', 'id']}
+                    Card.objects.create(match=match, **data)
+
+            return redirect("main:match_detail", pk=match.pk)
     else:
         form = MatchForm(instance=match)
-    return render(request, "main/matches/match_form.html", {"form": form})
+        goal_formset = GoalFormSet(
+            prefix='goals',
+            initial=[
+                {'player': g.player, 'minute': g.minute}
+                for g in match.goals.all()
+            ],
+            form_kwargs={'valid_players': valid_players}
+        )
+
+    assist_formset = AssistFormSet(
+        prefix='assists',
+        initial=[
+            {'player': a.player, 'minute': a.minute}
+            for a in match.assists.all()
+        ],
+        form_kwargs={'valid_players': valid_players}
+    )
+
+    card_formset = CardFormSet(
+        prefix='cards',
+        initial=[
+            {'player': c.player, 'minute': c.minute, 'card_type': c.card_type}
+            for c in match.cards.all()
+        ],
+        form_kwargs={'valid_players': valid_players}
+    )
+
+
+    return render(request, "main/matches/match_form.html", {
+        "form": form,
+        "goal_formset": goal_formset,
+        "assist_formset": assist_formset,
+        "card_formset": card_formset,
+    })
+
 
 def match_delete(request, pk):
     match = get_object_or_404(Match, pk=pk)
@@ -463,8 +536,6 @@ def match_delete(request, pk):
 
     return render(request, "main/matches/match_confirm_delete.html", {"match": match})
 
-
-
 def add_goal(request, match_id):
     match = get_object_or_404(Match, pk=match_id)
     if request.method == 'POST':
@@ -472,7 +543,7 @@ def add_goal(request, match_id):
         player = get_object_or_404(Player, id=player_id)
         
         # Provjeri da je igrač aktivan član
-        if not player.is_current_member:
+        if not player.is_active_member:
             return redirect('main:match_detail', pk=match_id)
         
         minute = request.POST['minute']
@@ -488,7 +559,7 @@ def add_assist(request, match_id):
         player = get_object_or_404(Player, id=player_id)
         
         # Provjeri da je igrač aktivan član
-        if not player.is_current_member:
+        if not player.is_active_member:
             return redirect('main:match_detail', pk=match_id)
         
         minute = request.POST['minute']
@@ -504,7 +575,7 @@ def add_card(request, match_id):
         player = get_object_or_404(Player, id=player_id)
         
         # Provjeri da je igrač aktivan član
-        if not player.is_current_member:
+        if not player.is_active_member:
             return redirect('main:match_detail', pk=match_id)
         
         minute = request.POST['minute']
@@ -516,7 +587,6 @@ def add_card(request, match_id):
             player.red_cards += 1
         player.save()
     return redirect('main:match_detail', pk=match_id)
-
 
 def staffmember_list(request):
     staffmembers = StaffMember.objects.all()

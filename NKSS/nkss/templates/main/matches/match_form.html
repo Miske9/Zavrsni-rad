@@ -1,272 +1,710 @@
 {% extends 'main/base.html' %}
-{% block title %}Dodaj utakmicu s događajima{% endblock %}
+{% block title %}Dodaj utakmicu{% endblock %}
+
 {% block content %}
 <div class="container my-4">
-
-  <!-- Filtar kategorije -->
-  <div class="card shadow-sm border-0 mb-4">
+  <!-- Category Filter -->
+  <div class="card shadow-sm mb-4">
     <div class="card-body">
-      <form method="get" action="" id="category-filter" class="row g-3 align-items-end">
-        <div class="col-md-8 col-lg-10">
-          <label for="id_category" class="form-label fw-semibold">Kategorija:</label>
-          <select name="category" id="id_category" class="form-select" onchange="this.form.submit()">
+      <form method="get" class="row g-3">
+        <div class="col-md-10">
+          <label class="form-label fw-semibold">Kategorija:</label>
+          <select name="category" class="form-select" onchange="this.form.submit()">
             <option value="">-- Odaberi kategoriju --</option>
             {% for value, name in form.fields.category.choices %}
-              <option value="{{ value }}" {% if form.category.value == value|stringformat:"s" %}selected{% endif %}>
-                {{ name }}
-              </option>
+              <option value="{{ value }}" {% if request.GET.category == value or form.category.value == value %}selected{% endif %}>{{ name }}</option>
             {% endfor %}
-          </select>                           
-        </div>
-        <div class="col-md-4 col-lg-2 d-grid">
-          <button type="submit" class="btn btn-outline-primary">Filtriraj</button>
+          </select>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Glavna forma -->
-  <form method="post" id="enhanced-match-form">
+  <!-- Main Form -->
+  <form method="post" id="match-form" novalidate>
     {% csrf_token %}
-    {{ form.category.as_hidden }}
+    <input type="hidden" name="category" value="{{ request.GET.category|default:form.category.value }}">
 
-    <!-- Osnovni podaci utakmice -->
-    <div class="card shadow border-0 mb-4">
+    <!-- Basic Data -->
+    <div class="card shadow mb-4">
       <div class="card-header bg-primary text-white">
-        <h3 class="mb-0">⚽ Osnovni podaci utakmice</h3>
+        <h4 class="mb-0">⚽ Osnovni podaci</h4>
       </div>
       <div class="card-body">
-        <!-- Prikaz grešaka forme -->
         {% if form.non_field_errors %}
-          <div class="alert alert-danger">
-            {{ form.non_field_errors }}
-          </div>
+          <div class="alert alert-danger">{{ form.non_field_errors }}</div>
         {% endif %}
-
-        <div class="row g-4">
+        <div class="row g-3">
           <div class="col-md-4">
-            {{ form.date.label_tag }}
-            {{ form.date }}
-            {% if form.date.errors %}
-              <div class="text-danger small">{{ form.date.errors|striptags }}</div>
-            {% endif %}
+            <label class="form-label">Datum</label>
+            <input type="date" name="date" class="form-control" value="{{ form.date.value|date:'Y-m-d' }}">
           </div>
           <div class="col-md-4">
-            {{ form.home_or_away.label_tag }}
-            {{ form.home_or_away }}
-            {% if form.home_or_away.errors %}
-              <div class="text-danger small">{{ form.home_or_away.errors|striptags }}</div>
-            {% endif %}
+            <label class="form-label">Lokacija</label>
+            <select name="home_or_away" class="form-select">
+              <option value="">-- Odaberi --</option>
+              {% for v, l in form.fields.home_or_away.choices %}
+                <option value="{{ v }}" {% if form.home_or_away.value == v %}selected{% endif %}>{{ l }}</option>
+              {% endfor %}
+            </select>
           </div>
           <div class="col-md-4">
-            {{ form.opponent.label_tag }}
-            {{ form.opponent }}
-            {% if form.opponent.errors %}
-              <div class="text-danger small">{{ form.opponent.errors|striptags }}</div>
-            {% endif %}
+            <label class="form-label">Protivnik</label>
+            <input type="text" name="opponent" class="form-control" value="{{ form.opponent.value|default:'' }}">
           </div>
-          <div class="col-md-4">
-            {{ form.home_score.label_tag }}
-            {{ form.home_score }}
-            {% if form.home_score.errors %}
-              <div class="text-danger small">{{ form.home_score.errors|striptags }}</div>
-            {% endif %}
+          <div class="col-md-6">
+            <label class="form-label">Naši golovi</label>
+            <input type="number" name="home_score" class="form-control" value="{{ form.home_score.value|default:'0' }}" min="0">
           </div>
-          <div class="col-md-4">
-            {{ form.away_score.label_tag }}
-            {{ form.away_score }}
-            {% if form.away_score.errors %}
-              <div class="text-danger small">{{ form.away_score.errors|striptags }}</div>
-            {% endif %}
+          <div class="col-md-6">
+            <label class="form-label">Protivnički golovi</label>
+            <input type="number" name="away_score" class="form-control" value="{{ form.away_score.value|default:'0' }}" min="0">
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Igrači -->
-    <div class="card shadow border-0 mb-4">
+    {% if request.GET.category or form.category.value %}
+    <!-- Players Selection with Better UI -->
+    <div class="card shadow mb-4">
       <div class="card-header bg-success text-white">
-        <h3 class="mb-0">👥 Igrači</h3>
+        <h4 class="mb-0">👥 Igrači</h4>
       </div>
       <div class="card-body">
-        <div class="row g-4">
-          <div class="col-12">
-            {{ form.starting_players.label_tag }}
-            <div class="player-select">
-              {{ form.starting_players }}
-            </div>
-            {% if form.starting_players.errors %}
-              <div class="text-danger small">{{ form.starting_players.errors|striptags }}</div>
-            {% endif %}
+        <!-- Starting XI -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-primary mb-0">⚽ Startna postava</h5>
+            <span class="badge bg-primary" id="startingCount">0 / 11</span>
           </div>
-          <div class="col-12">
-            {{ form.bench_players.label_tag }}
-            <div class="player-select">
-              {{ form.bench_players }}
-            </div>
-            {% if form.bench_players.errors %}
-              <div class="text-danger small">{{ form.bench_players.errors|striptags }}</div>
-            {% endif %}
+          <div class="player-grid">
+            {% for choice in form.starting_players %}
+              <div class="player-card">
+                <input type="checkbox" class="btn-check" name="starting_players" 
+                       id="start_{{ choice.data.value }}" value="{{ choice.data.value }}"
+                       {% if choice.data.selected %}checked{% endif %}>
+                <label class="btn btn-outline-success player-label" for="start_{{ choice.data.value }}">
+                  <i class="bi bi-person-circle"></i>
+                  <span>{{ choice.choice_label }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Bench -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="text-secondary mb-0">🪑 Klupa</h5>
+            <span class="badge bg-secondary" id="benchCount">0 / 7</span>
+          </div>
+          <div class="player-grid">
+            {% for choice in form.bench_players %}
+              <div class="player-card">
+                <input type="checkbox" class="btn-check" name="bench_players" 
+                       id="bench_{{ choice.data.value }}" value="{{ choice.data.value }}"
+                       {% if choice.data.selected %}checked{% endif %}>
+                <label class="btn btn-outline-secondary player-label" for="bench_{{ choice.data.value }}">
+                  <i class="bi bi-person"></i>
+                  <span>{{ choice.choice_label }}</span>
+                </label>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Captain and Goalkeeper -->
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">
+              <i class="bi bi-c-circle text-warning"></i> Kapetan
+            </label>
+            <select name="captain" class="form-select" id="captain-select">
+              <option value="">-- Odaberi kapetana --</option>
+              {% for choice in form.captain %}
+                <option value="{{ choice.data.value }}" {% if choice.data.selected %}selected{% endif %}>
+                  {{ choice.data.label }}
+                </option>
+              {% endfor %}
+            </select>
           </div>
           <div class="col-md-6">
-            {{ form.captain.label_tag }}
-            {{ form.captain }}
-            {% if form.captain.errors %}
-              <div class="text-danger small">{{ form.captain.errors|striptags }}</div>
-            {% endif %}
-          </div>
-          <div class="col-md-6">
-            {{ form.goalkeeper.label_tag }}
-            {{ form.goalkeeper }}
-            {% if form.goalkeeper.errors %}
-              <div class="text-danger small">{{ form.goalkeeper.errors|striptags }}</div>
-            {% endif %}
+            <label class="form-label fw-semibold">
+              <i class="bi bi-shield text-info"></i> Golman
+            </label>
+            <select name="goalkeeper" class="form-select" id="goalkeeper-select">
+              <option value="">-- Odaberi golmana --</option>
+              {% for choice in form.goalkeeper %}
+                <option value="{{ choice.data.value }}" {% if choice.data.selected %}selected{% endif %}>
+                  {{ choice.data.label }}
+                </option>
+              {% endfor %}
+            </select>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Događaji utakmice -->
-    <div class="row g-4">
-      <!-- Golovi -->
-      <div class="col-md-4">
-        <div class="card shadow border-0">
-          <div class="card-header bg-warning text-white">
-            <h5 class="mb-0">⚽ Golovi</h5>
-          </div>
-          <div class="card-body">
-            {{ goal_formset.management_form }}
-            <div id="goal-forms">
-              {% for form in goal_formset %}
-                <div class="goal-form mb-3 p-2 border rounded">
-                  <div class="row g-2">
-                    <div class="col-12">
-                      <label class="form-label">Igrač:</label>
-                      {{ form.player }}
+    <!-- Events Accordion -->
+    <div class="card shadow mb-4">
+      <div class="card-header bg-dark text-white">
+        <h4 class="mb-0">📋 Događaji utakmice</h4>
+      </div>
+      <div class="card-body">
+        <div class="accordion" id="eventsAccordion">
+          <!-- Goals -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGoals">
+                <span class="me-2">⚽</span> <strong>Golovi</strong>
+                <span class="badge bg-primary ms-auto me-2" id="goalCount">0</span>
+              </button>
+            </h2>
+            <div id="collapseGoals" class="accordion-collapse collapse show">
+              <div class="accordion-body">
+                {{ goal_formset.management_form }}
+                <div id="goal-forms-container">
+                  {% for form in goal_formset %}
+                    <div class="event-form mb-3">
+                      <div class="row g-3">
+                        <div class="col-md-8">
+                          <select name="{{ form.player.html_name }}" class="form-select goal-player-select">
+                            <option value="">-- Odaberi igrača --</option>
+                            {% for choice in form.player %}
+                              <option value="{{ choice.data.value }}" {% if choice.data.selected %}selected{% endif %}>
+                                {{ choice.data.label }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <input type="number" name="{{ form.minute.html_name }}" 
+                                 class="form-control" placeholder="Minuta" min="1" max="120"
+                                 value="{{ form.minute.value|default:'' }}">
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-12">
-                      <label class="form-label">Minuta:</label>
-                      {{ form.minute }}
-                    </div>
-                  </div>
-                  {% if form.non_field_errors %}
-                    <div class="text-danger small">{{ form.non_field_errors }}</div>
-                  {% endif %}
+                  {% endfor %}
                 </div>
-              {% endfor %}
+                <button type="button" class="btn btn-success btn-sm" id="add-goal-btn">
+                  <i class="bi bi-plus-circle"></i> Dodaj gol
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Asistencije -->
-      <div class="col-md-4">
-        <div class="card shadow border-0">
-          <div class="card-header bg-info text-white">
-            <h5 class="mb-0">🎯 Asistencije</h5>
-          </div>
-          <div class="card-body">
-            {{ assist_formset.management_form }}
-            <div id="assist-forms">
-              {% for form in assist_formset %}
-                <div class="assist-form mb-3 p-2 border rounded">
-                  <div class="row g-2">
-                    <div class="col-12">
-                      <label class="form-label">Igrač:</label>
-                      {{ form.player }}
+          <!-- Assists -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAssists">
+                <span class="me-2">🎯</span> <strong>Asistencije</strong>
+                <span class="badge bg-info ms-auto me-2" id="assistCount">0</span>
+              </button>
+            </h2>
+            <div id="collapseAssists" class="accordion-collapse collapse">
+              <div class="accordion-body">
+                {{ assist_formset.management_form }}
+                <div id="assist-forms-container">
+                  {% for form in assist_formset %}
+                    <div class="event-form mb-3">
+                      <div class="row g-3">
+                        <div class="col-md-8">
+                          <select name="{{ form.player.html_name }}" class="form-select assist-player-select">
+                            <option value="">-- Odaberi igrača --</option>
+                            {% for choice in form.player %}
+                              <option value="{{ choice.data.value }}" {% if choice.data.selected %}selected{% endif %}>
+                                {{ choice.data.label }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <input type="number" name="{{ form.minute.html_name }}" 
+                                 class="form-control" placeholder="Minuta" min="1" max="120"
+                                 value="{{ form.minute.value|default:'' }}">
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-12">
-                      <label class="form-label">Minuta:</label>
-                      {{ form.minute }}
-                    </div>
-                  </div>
-                  {% if form.non_field_errors %}
-                    <div class="text-danger small">{{ form.non_field_errors }}</div>
-                  {% endif %}
+                  {% endfor %}
                 </div>
-              {% endfor %}
+                <button type="button" class="btn btn-info btn-sm" id="add-assist-btn">
+                  <i class="bi bi-plus-circle"></i> Dodaj asistenciju
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <!-- Kartoni -->
-      <div class="col-md-4">
-        <div class="card shadow border-0">
-          <div class="card-header bg-danger text-white">
-            <h5 class="mb-0">🟨🟥 Kartoni</h5>
-          </div>
-          <div class="card-body">
-            {{ card_formset.management_form }}
-            <div id="card-forms">
-              {% for form in card_formset %}
-                <div class="card-form mb-3 p-2 border rounded">
-                  <div class="row g-2">
-                    <div class="col-12">
-                      <label class="form-label">Igrač:</label>
-                      {{ form.player }}
+          <!-- Cards -->
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCards">
+                <span class="me-2">🟨🟥</span> <strong>Kartoni</strong>
+                <span class="badge bg-warning text-dark ms-auto me-2" id="cardCount">0</span>
+              </button>
+            </h2>
+            <div id="collapseCards" class="accordion-collapse collapse">
+              <div class="accordion-body">
+                {{ card_formset.management_form }}
+                <div id="card-forms-container">
+                  {% for form in card_formset %}
+                    <div class="event-form mb-3">
+                      <div class="row g-3">
+                        <div class="col-md-5">
+                          <select name="{{ form.player.html_name }}" class="form-select card-player-select">
+                            <option value="">-- Odaberi igrača --</option>
+                            {% for choice in form.player %}
+                              <option value="{{ choice.data.value }}" {% if choice.data.selected %}selected{% endif %}>
+                                {{ choice.data.label }}
+                              </option>
+                            {% endfor %}
+                          </select>
+                        </div>
+                        <div class="col-md-4">
+                          <select name="{{ form.card_type.html_name }}" class="form-select">
+                            <option value="">-- Tip kartona --</option>
+                            <option value="Y" {% if form.card_type.value == "Y" %}selected{% endif %}>🟨 Žuti</option>
+                            <option value="R" {% if form.card_type.value == "R" %}selected{% endif %}>🟥 Crveni</option>
+                          </select>
+                        </div>
+                        <div class="col-md-3">
+                          <input type="number" name="{{ form.minute.html_name }}" 
+                                 class="form-control" placeholder="Min" min="1" max="120"
+                                 value="{{ form.minute.value|default:'' }}">
+                        </div>
+                      </div>
                     </div>
-                    <div class="col-12">
-                      <label class="form-label">Tip:</label>
-                      {{ form.card_type }}
-                    </div>
-                    <div class="col-12">
-                      <label class="form-label">Minuta:</label>
-                      {{ form.minute }}
-                    </div>
-                  </div>
-                  {% if form.non_field_errors %}
-                    <div class="text-danger small">{{ form.non_field_errors }}</div>
-                  {% endif %}
+                  {% endfor %}
                 </div>
-              {% endfor %}
+                <button type="button" class="btn btn-warning btn-sm" id="add-card-btn">
+                  <i class="bi bi-plus-circle"></i> Dodaj karton
+                </button>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+    {% else %}
+    <div class="alert alert-info">
+      <i class="bi bi-info-circle"></i> Odaberite kategoriju prije unosa podataka.
+    </div>
+    {% endif %}
 
-    <!-- Gumbovi za podnošenje -->
     <div class="d-flex justify-content-end gap-2 mt-4">
       <a href="{% url 'main:match_list' %}" class="btn btn-outline-secondary">Odustani</a>
-      <button type="submit" class="btn btn-success btn-lg">💾 Spremi utakmicu s događajima</button>
+      {% if request.GET.category or form.category.value %}
+      <button type="submit" class="btn btn-success btn-lg">💾 Spremi utakmicu</button>
+      {% endif %}
     </div>
   </form>
 </div>
 
 <style>
-  .player-select {
+  .player-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 8px;
-  }
-  
-  .goal-form, .assist-form, .card-form {
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
     background-color: #f8f9fa;
+    border-radius: 0.5rem;
   }
   
-  .form-control, .form-select {
+  .player-card {
+    position: relative;
+  }
+  
+  .player-label {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 0.9rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+    transition: all 0.2s;
+  }
+  
+  .player-label i {
+    font-size: 1.2rem;
+  }
+  
+  .player-label span {
+    text-align: center;
+    word-break: break-word;
+  }
+  
+  .btn-check:checked + .player-label {
+    font-weight: bold;
+    transform: scale(1.02);
+  }
+  
+  .event-form {
+    background-color: #f8f9fa;
+    padding: 1rem;
     border-radius: 0.375rem;
+    border: 1px solid #dee2e6;
+    position: relative;
+  }
+  
+  .event-form:hover {
+    background-color: #fff;
+    border-color: #0d6efd;
+  }
+  
+  .remove-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+  
+  form:not(.was-validated) :invalid {
+    border-color: #dee2e6;
   }
 </style>
 
 <script>
-// Dodaj JavaScript za dinamičko ažuriranje formi kada se promijeni kategorija
 document.addEventListener('DOMContentLoaded', function() {
-    const categorySelect = document.getElementById('id_category');
-    if (categorySelect) {
-        categorySelect.addEventListener('change', function() {
-            // Resetiraj sve forme kada se promijeni kategorija
-            const forms = document.querySelectorAll('.goal-form, .assist-form, .card-form');
-            forms.forEach(form => {
-                const selects = form.querySelectorAll('select');
-                const inputs = form.querySelectorAll('input[type="number"]');
-                selects.forEach(select => select.selectedIndex = 0);
-                inputs.forEach(input => input.value = '');
+    // Player selection limits
+    const MAX_STARTERS = 11;
+    const MAX_BENCH = 7;
+    
+    // Prevent over-selection of players
+    function enforcePlayerLimits() {
+        const startingInputs = document.querySelectorAll('input[name="starting_players"]');
+        const benchInputs = document.querySelectorAll('input[name="bench_players"]');
+        
+        // Handle starting players
+        startingInputs.forEach(input => {
+            input.addEventListener('change', function(e) {
+                const checkedStarters = document.querySelectorAll('input[name="starting_players"]:checked');
+                
+                if (checkedStarters.length > MAX_STARTERS) {
+                    e.target.checked = false;
+                    alert(`Maksimalno ${MAX_STARTERS} igrača u početnoj postavi!`);
+                }
+                
+                // Prevent same player in both starting and bench
+                if (e.target.checked) {
+                    const benchInput = document.querySelector(`input[name="bench_players"][value="${e.target.value}"]`);
+                    if (benchInput && benchInput.checked) {
+                        benchInput.checked = false;
+                    }
+                }
+                
+                updatePlayerCounts();
+                updateAllEventSelects();
             });
+        });
+        
+        // Handle bench players
+        benchInputs.forEach(input => {
+            input.addEventListener('change', function(e) {
+                const checkedBench = document.querySelectorAll('input[name="bench_players"]:checked');
+                
+                if (checkedBench.length > MAX_BENCH) {
+                    e.target.checked = false;
+                    alert(`Maksimalno ${MAX_BENCH} igrača na klupi!`);
+                }
+                
+                // Prevent same player in both starting and bench
+                if (e.target.checked) {
+                    const startingInput = document.querySelector(`input[name="starting_players"][value="${e.target.value}"]`);
+                    if (startingInput && startingInput.checked) {
+                        startingInput.checked = false;
+                    }
+                }
+                
+                updatePlayerCounts();
+                updateAllEventSelects();
+            });
+        });
+    }
+    
+    // Player counters
+    function updatePlayerCounts() {
+        const startingCount = document.querySelectorAll('input[name="starting_players"]:checked').length;
+        const benchCount = document.querySelectorAll('input[name="bench_players"]:checked').length;
+        
+        const startingBadge = document.getElementById('startingCount');
+        const benchBadge = document.getElementById('benchCount');
+        
+        startingBadge.textContent = `${startingCount} / ${MAX_STARTERS}`;
+        benchBadge.textContent = `${benchCount} / ${MAX_BENCH}`;
+        
+        // Change badge color based on count
+        startingBadge.className = startingCount === MAX_STARTERS ? 'badge bg-success' : 
+                                  startingCount > MAX_STARTERS ? 'badge bg-danger' : 'badge bg-primary';
+        benchBadge.className = benchCount === MAX_BENCH ? 'badge bg-success' : 
+                               benchCount > MAX_BENCH ? 'badge bg-danger' : 'badge bg-secondary';
+        
+        // Update captain and goalkeeper selects
+        updateSpecialSelects();
+    }
+    
+    function updateSpecialSelects() {
+        const startingPlayers = document.querySelectorAll('input[name="starting_players"]:checked');
+        const captainSelect = document.getElementById('captain-select');
+        const goalkeeperSelect = document.getElementById('goalkeeper-select');
+        
+        const currentCaptain = captainSelect.value;
+        const currentGoalkeeper = goalkeeperSelect.value;
+        
+        // Clear and rebuild options
+        captainSelect.innerHTML = '<option value="">-- Odaberi kapetana --</option>';
+        goalkeeperSelect.innerHTML = '<option value="">-- Odaberi golmana --</option>';
+        
+        startingPlayers.forEach(input => {
+            const label = document.querySelector(`label[for="${input.id}"] span`);
+            if (label) {
+                const option1 = new Option(label.textContent, input.value);
+                const option2 = new Option(label.textContent, input.value);
+                
+                if (input.value === currentCaptain) option1.selected = true;
+                if (input.value === currentGoalkeeper) option2.selected = true;
+                
+                captainSelect.add(option1);
+                goalkeeperSelect.add(option2);
+            }
+        });
+    }
+    
+    // Initialize player limits
+    enforcePlayerLimits();
+    updatePlayerCounts();
+    
+    // Get selected players for events
+    function getSelectedPlayers() {
+        const players = [];
+        document.querySelectorAll('input[name="starting_players"]:checked, input[name="bench_players"]:checked').forEach(input => {
+            const label = document.querySelector(`label[for="${input.id}"] span`);
+            if (label) {
+                players.push({value: input.value, text: label.textContent.trim()});
+            }
+        });
+        return players;
+    }
+    
+    // Update all event select boxes with current players
+    function updateAllEventSelects() {
+        const players = getSelectedPlayers();
+        
+        document.querySelectorAll('.goal-player-select, .assist-player-select, .card-player-select').forEach(select => {
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Odaberi igrača --</option>';
+            
+            players.forEach(player => {
+                const option = new Option(player.text, player.value);
+                if (player.value === currentValue) option.selected = true;
+                select.add(option);
+            });
+        });
+    }
+    
+    // Dynamic form management for events
+    class EventFormManager {
+        constructor(type) {
+            this.type = type;
+            this.container = document.getElementById(`${type}-forms-container`);
+            this.addBtn = document.getElementById(`add-${type}-btn`);
+            this.totalFormsInput = document.querySelector(`input[name="${type}s-TOTAL_FORMS"]`);
+            this.formCount = this.container.querySelectorAll('.event-form').length;
+            
+            this.init();
+        }
+        
+        init() {
+            // Add remove buttons to existing forms (except first)
+            this.container.querySelectorAll('.event-form').forEach((form, index) => {
+                if (index > 0) {
+                    this.addRemoveButton(form);
+                }
+            });
+            
+            // Setup add button
+            this.addBtn.addEventListener('click', () => this.addForm());
+            
+            // Update count
+            this.updateCount();
+        }
+        
+        addForm() {
+            if (this.formCount >= 10) {
+                alert('Maksimalno 10 događaja!');
+                return;
+            }
+            
+            const newForm = this.createForm();
+            this.container.appendChild(newForm);
+            this.formCount++;
+            this.updateCount();
+            updateAllEventSelects();
+        }
+        
+        createForm() {
+            const div = document.createElement('div');
+            div.className = 'event-form mb-3';
+            
+            const players = getSelectedPlayers();
+            let playerOptions = '<option value="">-- Odaberi igrača --</option>';
+            players.forEach(p => {
+                playerOptions += `<option value="${p.value}">${p.text}</option>`;
+            });
+            
+            if (this.type === 'goal') {
+                div.innerHTML = `
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <select name="goals-${this.formCount}-player" class="form-select goal-player-select">
+                                ${playerOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" name="goals-${this.formCount}-minute" 
+                                   class="form-control" placeholder="Minuta" min="1" max="120">
+                        </div>
+                    </div>
+                `;
+            } else if (this.type === 'assist') {
+                div.innerHTML = `
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <select name="assists-${this.formCount}-player" class="form-select assist-player-select">
+                                ${playerOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <input type="number" name="assists-${this.formCount}-minute" 
+                                   class="form-control" placeholder="Minuta" min="1" max="120">
+                        </div>
+                    </div>
+                `;
+            } else if (this.type === 'card') {
+                div.innerHTML = `
+                    <div class="row g-3">
+                        <div class="col-md-5">
+                            <select name="cards-${this.formCount}-player" class="form-select card-player-select">
+                                ${playerOptions}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select name="cards-${this.formCount}-card_type" class="form-select">
+                                <option value="">-- Tip kartona --</option>
+                                <option value="Y">🟨 Žuti</option>
+                                <option value="R">🟥 Crveni</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="number" name="cards-${this.formCount}-minute" 
+                                   class="form-control" placeholder="Min" min="1" max="120">
+                        </div>
+                    </div>
+                `;
+            }
+            
+            this.addRemoveButton(div);
+            return div;
+        }
+        
+        addRemoveButton(formDiv) {
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.className = 'btn btn-danger btn-sm remove-btn';
+            removeBtn.innerHTML = '<i class="bi bi-x"></i>';
+            removeBtn.onclick = () => this.removeForm(formDiv);
+            formDiv.style.position = 'relative';
+            formDiv.appendChild(removeBtn);
+        }
+        
+        removeForm(formDiv) {
+            formDiv.remove();
+            this.formCount--;
+            this.updateCount();
+            this.renumberForms();
+        }
+        
+        renumberForms() {
+            this.container.querySelectorAll('.event-form').forEach((form, index) => {
+                // Update input names
+                const playerSelect = form.querySelector('select[name*="player"]');
+                const minuteInput = form.querySelector('input[name*="minute"]');
+                
+                if (playerSelect) {
+                    playerSelect.name = `${this.type}s-${index}-player`;
+                }
+                if (minuteInput) {
+                    minuteInput.name = `${this.type}s-${index}-minute`;
+                }
+                
+                if (this.type === 'card') {
+                    const cardTypeSelect = form.querySelector('select[name*="card_type"]');
+                    if (cardTypeSelect) {
+                        cardTypeSelect.name = `cards-${index}-card_type`;
+                    }
+                }
+            });
+        }
+        
+        updateCount() {
+            this.totalFormsInput.value = this.formCount;
+            
+            // Update visual counter
+            let filledCount = 0;
+            this.container.querySelectorAll('.event-form').forEach(form => {
+                const playerSelect = form.querySelector('select[name*="player"]');
+                if (playerSelect && playerSelect.value) {
+                    filledCount++;
+                }
+            });
+            document.getElementById(`${this.type}Count`).textContent = filledCount;
+        }
+    }
+    
+    // Initialize event managers if category is selected
+    if (document.querySelector('input[name="category"]')?.value) {
+        const goalManager = new EventFormManager('goal');
+        const assistManager = new EventFormManager('assist');
+        const cardManager = new EventFormManager('card');
+        
+        // Update counts when events change
+        ['goal', 'assist', 'card'].forEach(type => {
+            const container = document.getElementById(`${type}-forms-container`);
+            if (container) {
+                container.addEventListener('change', () => {
+                    let filledCount = 0;
+                    container.querySelectorAll('.event-form').forEach(form => {
+                        const playerSelect = form.querySelector('select[name*="player"]');
+                        if (playerSelect && playerSelect.value) {
+                            filledCount++;
+                        }
+                    });
+                    document.getElementById(`${type}Count`).textContent = filledCount;
+                });
+            }
+        });
+        
+        // Validate goals match score on submit
+        const form = document.getElementById('match-form');
+        form.addEventListener('submit', function(e) {
+            const homeScore = parseInt(document.querySelector('input[name="home_score"]').value) || 0;
+            let goalsEntered = 0;
+            
+            document.querySelectorAll('#goal-forms-container .event-form').forEach(form => {
+                const playerSelect = form.querySelector('select[name*="player"]');
+                const minuteInput = form.querySelector('input[name*="minute"]');
+                if (playerSelect && playerSelect.value && minuteInput && minuteInput.value) {
+                    goalsEntered++;
+                }
+            });
+            
+            if (homeScore !== goalsEntered) {
+                e.preventDefault();
+                alert(`Broj golova (${goalsEntered}) mora odgovarati rezultatu (${homeScore})!`);
+                return false;
+            }
+            
+            form.classList.add('was-validated');
         });
     }
 });
 </script>
-
 {% endblock %}

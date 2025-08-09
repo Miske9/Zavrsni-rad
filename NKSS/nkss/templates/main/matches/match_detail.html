@@ -62,106 +62,6 @@
 
       <hr class="my-4" />
 
-      <div class="accordion" id="actionsAccordion">
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingGoals">
-            <button
-              class="accordion-button"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#collapseGoals"
-              aria-expanded="true"
-              aria-controls="collapseGoals"
-            >
-              ⚽ Dodaj gol
-            </button>
-          </h2>
-          <div
-            id="collapseGoals"
-            class="accordion-collapse collapse show"
-            aria-labelledby="headingGoals"
-            data-bs-parent="#actionsAccordion"
-          >
-            <div class="accordion-body">
-              <form
-                method="post"
-                action="{% url 'main:add_goal' match.id %}"
-                class="d-flex flex-wrap gap-2 align-items-end"
-              >
-                {% csrf_token %} {{ goal_form.as_p }}
-                <button type="submit" class="btn btn-success">Spremi</button>
-              </form>
-            </div>
-          </div>
-        </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingAssists">
-            <button
-              class="accordion-button collapsed"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#collapseAssists"
-              aria-expanded="false"
-              aria-controls="collapseAssists"
-            >
-              🎯 Dodaj asistenciju
-            </button>
-          </h2>
-          <div
-            id="collapseAssists"
-            class="accordion-collapse collapse"
-            aria-labelledby="headingAssists"
-            data-bs-parent="#actionsAccordion"
-          >
-            <div class="accordion-body">
-              <form
-                method="post"
-                action="{% url 'main:add_assist' match.id %}"
-                class="d-flex flex-wrap gap-2 align-items-end"
-              >
-                {% csrf_token %} {{ assist_form.as_p }}
-                <button type="submit" class="btn btn-primary">Spremi</button>
-              </form>
-            </div>
-          </div>
-        </div>
-        <div class="accordion-item">
-          <h2 class="accordion-header" id="headingCards">
-            <button
-              class="accordion-button collapsed"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#collapseCards"
-              aria-expanded="false"
-              aria-controls="collapseCards"
-            >
-              🟥🟨 Dodaj karton
-            </button>
-          </h2>
-          <div
-            id="collapseCards"
-            class="accordion-collapse collapse"
-            aria-labelledby="headingCards"
-            data-bs-parent="#actionsAccordion"
-          >
-            <div class="accordion-body">
-              <form
-                method="post"
-                action="{% url 'main:add_card' match.id %}"
-                class="d-flex flex-wrap gap-2 align-items-end"
-              >
-                {% csrf_token %} {{ card_form.as_p }}
-                <button type="submit" class="btn btn-warning text-white">
-                  Spremi
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <hr class="my-4" />
-
       <div class="row g-4">
         <div class="col-md-4">
           <h5>⚽ Golovi</h5>
@@ -203,7 +103,13 @@
           </ul>
         </div>
         <hr class="my-4" />
-        <div class="d-flex justify-content-end">
+         <div class="d-flex justify-content-end">
+          <a
+            href="{% url 'main:match_update' match.id %}"
+            class="btn btn-danger"
+          >
+            🗑️ Uredi utakmicu
+          </a>
           <a
             href="{% url 'main:match_delete' match.id %}"
             class="btn btn-danger"

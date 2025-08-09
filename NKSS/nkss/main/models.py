@@ -35,8 +35,6 @@ class Player(models.Model):
     yellow_cards = models.PositiveIntegerField(default=0)
     red_cards = models.PositiveIntegerField(default=0)
     appearances = models.PositiveIntegerField(default=0)
-    
-    # Membership tracking fields
     is_active_member = models.BooleanField(default=True, verbose_name='Aktivan član')
     member_since = models.DateField(default=date.today, verbose_name='Član od')
     member_until = models.DateField(blank=True, null=True, verbose_name='Član do')
@@ -45,7 +43,6 @@ class Player(models.Model):
         return f"{self.first_name} {self.last_name}"
     
     def get_membership_status(self):
-        """Returns detailed membership status"""
         today = date.today()
         
         if self.is_active_member:
