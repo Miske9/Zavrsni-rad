@@ -94,8 +94,14 @@
           <ul class="list-group list-group-flush">
             {% for card in match.cards.all %}
             <li class="list-group-item">
-              {{ card.get_card_type_display }} – {{ card.minute }}' –>
-              {{card.player.first_name }} {{ card.player.last_name }}
+              {% if card.card_type == 'Y' %}
+                🟨
+              {% elif card.card_type == 'R' %}
+                🟥
+              {% else %}
+                {{ card.get_card_type_display }}
+              {% endif %}
+              – {{ card.minute }}' – {{card.player.first_name }} {{ card.player.last_name }}
             </li>
             {% empty %}
             <li class="list-group-item text-muted">Nema kartona.</li>

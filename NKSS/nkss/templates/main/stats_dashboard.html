@@ -17,7 +17,7 @@
                             <label for="category" class="form-label fw-semibold">
                                 <i class="bi bi-funnel-fill text-primary"></i> Kategorija:
                             </label>
-                            <select name="category" id="category" class="form-select" aria-label="Kategorija">
+                            <select name="category" id="category" class="form-select">
                                 <option value="">📊 Sve kategorije</option>
                                 {% for code, name in categories %}
                                     <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ name }}</option>
@@ -226,8 +226,13 @@
             <!-- Graf -->
             <div class="card shadow mb-4 border-0">
                 <div class="card-body p-4">
-                    <div style="height: 400px;">
+                    <div style="height: 400px; position: relative;">
                         <canvas id="playerChart"></canvas>
+                        <div id="chartLoading" class="text-center" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Učitavanje...</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -303,78 +308,82 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Top žuti kartoni -->
                 <div class="col-md-6">
-                <div class="card shadow border-0 h-100">
-                    <div class="card-header bg-warning text-dark">
-                        <h5 class="mb-0">
-                            🟨 Top 5 žutih kartona
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            {% for player in yellow_cards|slice:":5" %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-warning text-dark rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
-                                        {{ forloop.counter }}
-                                    </span>
-                                    <div>
-                                        <strong>{{ player.name }}</strong>
-                                        {% if player.category %}
-                                            <small class="text-muted d-block">{{ player.category }}</small>
-                                        {% endif %}
+                    <div class="card shadow border-0 h-100">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0">
+                                🟨 Top 5 žutih kartona
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% for player in yellow_cards|slice:":5" %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-warning text-dark rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            {{ forloop.counter }}
+                                        </span>
+                                        <div>
+                                            <strong>{{ player.name }}</strong>
+                                            {% if player.category %}
+                                                <small class="text-muted d-block">{{ player.category }}</small>
+                                            {% endif %}
+                                        </div>
                                     </div>
+                                    <span class="badge bg-warning text-dark rounded-pill px-3 py-2">{{ player.value }}</span>
                                 </div>
-                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2">{{ player.value }}</span>
+                                {% empty %}
+                                <div class="list-group-item text-center text-muted py-4">
+                                    Nema podataka
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% empty %}
-                            <div class="list-group-item text-center text-muted py-4">
-                                Nema podataka
-                            </div>
-                            {% endfor %}
                         </div>
                     </div> 
                 </div>
-            </div>
 
-            <!-- Top crveni kartoni -->
-            <div class="col-md-6">
-                <div class="card shadow border-0 h-100">
-                    <div class="card-header bg-danger text-white">
-                        <h5 class="mb-0">
-                            🟥 Top 5 crvenih kartona
-                        </h5>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="list-group list-group-flush">
-                            {% for player in red_cards|slice:":5" %}
-                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
-                                <div class="d-flex align-items-center">
-                                    <span class="badge bg-danger rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
-                                        {{ forloop.counter }}
-                                    </span>
-                                    <div>
-                                        <strong>{{ player.name }}</strong>
-                                        {% if player.category %}
-                                            <small class="text-muted d-block">{{ player.category }}</small>
-                                        {% endif %}
+                <!-- Top crveni kartoni -->
+                <div class="col-md-6">
+                    <div class="card shadow border-0 h-100">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0">
+                                🟥 Top 5 crvenih kartona
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% for player in red_cards|slice:":5" %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-danger rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            {{ forloop.counter }}
+                                        </span>
+                                        <div>
+                                            <strong>{{ player.name }}</strong>
+                                            {% if player.category %}
+                                                <small class="text-muted d-block">{{ player.category }}</small>
+                                            {% endif %}
+                                        </div>
                                     </div>
+                                    <span class="badge bg-danger rounded-pill px-3 py-2">{{ player.value }}</span>
                                 </div>
-                                <span class="badge bg-danger rounded-pill px-3 py-2">{{ player.value }}</span>
+                                {% empty %}
+                                <div class="list-group-item text-center text-muted py-4">
+                                    Nema podataka
+                                </div>
+                                {% endfor %}
                             </div>
-                            {% empty %}
-                            <div class="list-group-item text-center text-muted py-4">
-                                Nema podataka
-                            </div>
-                            {% endfor %}
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+</div>
 
 <style>
-    /* Stat cards hover effect */
     .stat-card {
         transition: transform 0.2s ease, box-shadow 0.2s ease;
         border: 1px solid rgba(0,0,0,0.05);
@@ -384,7 +393,6 @@
         box-shadow: 0 5px 15px rgba(0,0,0,0.1);
     }
 
-    /* Goal stats styling */
     .goal-stat {
         transition: all 0.2s ease;
         border: 1px solid rgba(0,0,0,0.05);
@@ -394,7 +402,6 @@
         box-shadow: 0 3px 10px rgba(0,0,0,0.08);
     }
 
-    /* Chart buttons */
     .chart-btn {
         min-width: 140px;
         font-weight: 500;
@@ -405,7 +412,6 @@
         box-shadow: 0 3px 10px rgba(0,0,0,0.15);
     }
 
-    /* Nav pills custom */
     .nav-pills .nav-link {
         color: #6c757d;
         font-weight: 600;
@@ -421,7 +427,6 @@
         box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3);
     }
 
-    /* Cards */
     .card {
         border-radius: 0.5rem;
     }
@@ -430,12 +435,10 @@
         font-weight: 600;
     }
 
-    /* Table hover */
     .table-hover tbody tr:hover {
         background-color: rgba(0,0,0,0.02);
     }
 
-    /* List group items */
     .list-group-item {
         border-left: none;
         border-right: none;
@@ -444,7 +447,6 @@
         background-color: #f8f9fa;
     }
 
-    /* Responsive */
     @media (max-width: 768px) {
         .stat-card {
             padding: 1rem !important;
@@ -456,62 +458,93 @@
 </style>
 
 <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Data sets - make sure they're properly formatted
     const dataSets = {
-        goals: {{ goals|safe }},
-        assists: {{ assists|safe }},
-        appearances: {{ appearances|safe }},
+        goals: {{ goals|default:"[]"|safe }},
+        assists: {{ assists|default:"[]"|safe }},
+        appearances: {{ appearances|default:"[]"|safe }}
     };
 
     let playerChart = null;
     let currentChartType = null;
 
     function showChart(type) {
-        if (currentChartType === type) return; // već prikazujemo taj tip
         currentChartType = type;
 
         // Update button states
         document.querySelectorAll('.chart-btn').forEach(btn => {
-            btn.classList.remove('btn-primary', 'btn-success', 'btn-info', 'btn-warning', 'btn-danger',
-                                 'btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'btn-outline-warning', 'btn-outline-danger');
+            btn.classList.remove('btn-primary', 'btn-success', 'btn-info');
             const btnType = btn.id.replace('btn-', '');
-            const outlineClass = {
-                goals: 'btn-outline-primary',
-                assists: 'btn-outline-success',
-                appearances: 'btn-outline-info',
-                yellow_cards: 'btn-outline-warning',
-                red_cards: 'btn-outline-danger'
-            }[btnType];
-            btn.classList.add(outlineClass);
+            
+            if (btnType === 'goals') {
+                btn.classList.add('btn-outline-primary');
+            } else if (btnType === 'assists') {
+                btn.classList.add('btn-outline-success');
+            } else if (btnType === 'appearances') {
+                btn.classList.add('btn-outline-info');
+            }
         });
 
+        // Activate selected button
         const activeBtn = document.getElementById('btn-' + type);
-        activeBtn.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'btn-outline-warning', 'btn-outline-danger');
-        const solidClass = {
-            goals: 'btn-primary',
-            assists: 'btn-success',
-            appearances: 'btn-info',
-            yellow_cards: 'btn-warning',
-            red_cards: 'btn-danger'
-        }[type];
-        activeBtn.classList.add(solidClass);
+        if (activeBtn) {
+            activeBtn.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-info');
+            
+            const solidClass = {
+                goals: 'btn-primary',
+                assists: 'btn-success',
+                appearances: 'btn-info'
+            }[type];
+            activeBtn.classList.add(solidClass);
+        }
 
-        const data = dataSets[type];
-        const labels = data.map(item => item.name);
-        const values = data.map(item => item.value);
+        // Hide loading spinner
+        const loading = document.getElementById('chartLoading');
+        if (loading) loading.style.display = 'none';
+
+        // Get data for current type
+        const data = dataSets[type] || [];
+        console.log('Data for', type, ':', data); // Debug log
+        
+        const limitedData = data.slice(0, 10);
+        const labels = limitedData.map(item => item.name || 'N/A');
+        const values = limitedData.map(item => item.value || 0);
 
         let chartTitle = '';
         let bgColor = 'rgba(13, 110, 253, 0.7)';
 
         switch(type) {
-            case 'goals': chartTitle = '⚽ Najbolji strijelci'; bgColor = 'rgba(13, 110, 253, 0.7)'; break;
-            case 'assists': chartTitle = '🎯 Najbolji asistenti'; bgColor = 'rgba(25, 135, 84, 0.7)'; break;
-            case 'appearances': chartTitle = '📅 Najviše nastupa'; bgColor = 'rgba(13, 202, 240, 0.7)'; break;
+            case 'goals': 
+                chartTitle = '⚽ Najbolji strijelci'; 
+                bgColor = 'rgba(13, 110, 253, 0.7)'; 
+                break;
+            case 'assists': 
+                chartTitle = '🎯 Najbolji asistenti'; 
+                bgColor = 'rgba(25, 135, 84, 0.7)'; 
+                break;
+            case 'appearances': 
+                chartTitle = '📅 Najviše nastupa'; 
+                bgColor = 'rgba(13, 202, 240, 0.7)'; 
+                break;
         }
 
-        const ctx = document.getElementById('playerChart').getContext('2d');
+        const canvas = document.getElementById('playerChart');
+        if (!canvas) {
+            console.error('Canvas element not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
 
-        if (!playerChart) {
-            // Kreiramo graf samo jednom
+        // Destroy existing chart
+        if (playerChart) {
+            playerChart.destroy();
+            playerChart = null;
+        }
+
+        // Create new chart
+        try {
             playerChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
@@ -528,7 +561,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: false,
+                    animation: {
+                        duration: 500
+                    },
                     plugins: {
                         title: {
                             display: true,
@@ -547,41 +582,64 @@
                     scales: {
                         y: {
                             beginAtZero: true,
-                            ticks: { stepSize: 1, font: { size: 12 } },
+                            ticks: { 
+                                stepSize: 1, 
+                                font: { size: 12 },
+                                callback: function(value) {
+                                    if (Math.floor(value) === value) {
+                                        return value;
+                                    }
+                                }
+                            },
                             grid: { color: 'rgba(0,0,0,0.05)' }
                         },
                         x: {
-                            ticks: { font: { size: 11 }, maxRotation: 45, minRotation: 45 },
+                            ticks: { 
+                                font: { size: 11 }, 
+                                maxRotation: 45, 
+                                minRotation: 45 
+                            },
                             grid: { display: false }
                         }
                     }
                 }
             });
-        } else {
-            // Samo ažuriramo postojeći graf
-            playerChart.data.labels = labels;
-            playerChart.data.datasets[0].data = values;
-            playerChart.data.datasets[0].backgroundColor = bgColor;
-            playerChart.data.datasets[0].borderColor = bgColor.replace('0.7', '1');
-            playerChart.options.plugins.title.text = chartTitle;
-            playerChart.update();
+            
+            console.log('Chart created successfully for', type);
+        } catch (error) {
+            console.error('Error creating chart:', error);
         }
     }
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const playersTab = document.getElementById('players-tab');
+    // Make showChart globally accessible
+    window.showChart = showChart;
+
+    // Initialize chart when players tab is shown
+    const playersTab = document.getElementById('players-tab');
+    if (playersTab) {
         playersTab.addEventListener('shown.bs.tab', function() {
-            setTimeout(() => showChart('goals'));
+            setTimeout(() => {
+                showChart('goals');
+            }, 100);
         });
-    });
+    }
 
-    document.getElementById('category')?.addEventListener('change', function() {
-        this.form.submit();
-    });
-    document.getElementById('period')?.addEventListener('change', function() {
-        this.form.submit();
-    });
+    // Handle filter changes
+    const categorySelect = document.getElementById('category');
+    const periodSelect = document.getElementById('period');
+    
+    if (categorySelect) {
+        categorySelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+    
+    if (periodSelect) {
+        periodSelect.addEventListener('change', function() {
+            this.form.submit();
+        });
+    }
+});
 </script>
-
 
 {% endblock %}
