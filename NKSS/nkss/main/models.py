@@ -118,7 +118,7 @@ class MembershipHistory(models.Model):
 
 
 class Match(models.Model):
-    HOME_AWAY = [("H", "Home"), ("A", "Away")]
+    HOME_AWAY = [("H", "Suhača"), ("A", "Gostovanje")]
 
     date = models.DateField()
     home_or_away = models.CharField(max_length=1, choices=HOME_AWAY)

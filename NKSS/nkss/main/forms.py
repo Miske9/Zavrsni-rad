@@ -301,21 +301,6 @@ class MatchForm(forms.ModelForm):
                         errors.append(f"Igrač ne može asistirati svoj vlastiti gol u {assist['minute']}. minuti")
         
         return errors
-        
-        # Check that each assist has a corresponding goal in the same minute
-        goal_minutes = [goal['minute'] for goal in goals]
-        for assist in assists:
-            if assist['minute'] not in goal_minutes:
-                errors.append(f"Asistencija u {assist['minute']}. minuti nema odgovarajući gol")
-        
-        # Check that a player can't assist their own goal in the same minute
-        for assist in assists:
-            same_minute_goals = [g for g in goals if g['minute'] == assist['minute']]
-            for goal in same_minute_goals:
-                if goal['player'] == assist['player']:
-                    errors.append(f"Igrač ne može asistirati svoj vlastiti gol u {assist['minute']}. minuti")
-        
-        return errors
     
 class MatchEventForm(forms.ModelForm):
     class Meta:
@@ -335,7 +320,7 @@ class GoalEventForm(forms.Form):
     )
     minute = forms.IntegerField(
         min_value=1, 
-        max_value=120, 
+        max_value=90, 
         required=False, 
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'})
     )
@@ -353,7 +338,7 @@ class AssistEventForm(forms.Form):
     )
     minute = forms.IntegerField(
         min_value=1, 
-        max_value=120, 
+        max_value=90, 
         required=False,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'})
     )
@@ -376,7 +361,7 @@ class CardEventForm(forms.Form):
     )
     minute = forms.IntegerField(
         min_value=1, 
-        max_value=120, 
+        max_value=90, 
         required=False,
         widget=forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Minuta'})
     )
@@ -386,9 +371,9 @@ class CardEventForm(forms.Form):
         super().__init__(*args, **kwargs)
         self.fields['player'].queryset = valid_players
         
-GoalFormSet = forms.formset_factory(GoalEventForm, extra=1, max_num=10, can_delete=True)
-AssistFormSet = forms.formset_factory(AssistEventForm, extra=1, max_num=10, can_delete=True)
-CardFormSet = forms.formset_factory(CardEventForm, extra=1, max_num=10, can_delete=True)
+GoalFormSet = forms.formset_factory(GoalEventForm, extra=1, max_num=20, can_delete=True)
+AssistFormSet = forms.formset_factory(AssistEventForm, extra=1, max_num=20, can_delete=True)
+CardFormSet = forms.formset_factory(CardEventForm, extra=1, max_num=30, can_delete=True)
         
 class StaffMemberForm(forms.ModelForm):
     class Meta:

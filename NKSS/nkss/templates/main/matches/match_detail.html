@@ -102,13 +102,12 @@
             {% endfor %}
           </ul>
         </div>
-        <hr class="my-4" />
-         <div class="d-flex justify-content-end">
+         <div class="card-footer d-flex justify-content-between">
           <a
             href="{% url 'main:match_update' match.id %}"
-            class="btn btn-danger"
+            class="btn btn-primary"
           >
-            🗑️ Uredi utakmicu
+            ✏️ Uredi utakmicu
           </a>
           <a
             href="{% url 'main:match_delete' match.id %}"
