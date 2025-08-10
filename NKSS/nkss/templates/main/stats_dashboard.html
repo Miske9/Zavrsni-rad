@@ -3,33 +3,41 @@
 {% block content %}
 
 <div class="container-fluid py-4">
-    <h1 class="text-center fw-bold mb-4">📊 Statistika igrača i kluba</h1>
+    <h1 class="text-center fw-bold mb-4">
+        <i class="bi bi-bar-chart-line"></i> Statistika NK Smoljanci Sloboda
+    </h1>
 
     <!-- Filteri -->
     <div class="row justify-content-center mb-4">
-        <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-body">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0">
+                <div class="card-body bg-light">
                     <form method="get" class="row g-3 align-items-end">
                         <div class="col-md-4">
-                            <label for="category" class="form-label fw-semibold">Kategorija:</label>
-                            <select name="category" id="category" class="form-select">
-                                <option value="">Sve kategorije</option>
+                            <label for="category" class="form-label fw-semibold">
+                                <i class="bi bi-funnel-fill text-primary"></i> Kategorija:
+                            </label>
+                            <select name="category" id="category" class="form-select" aria-label="Kategorija">
+                                <option value="">📊 Sve kategorije</option>
                                 {% for code, name in categories %}
                                     <option value="{{ code }}" {% if selected_category == code %}selected{% endif %}>{{ name }}</option>
                                 {% endfor %}
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <label for="period" class="form-label fw-semibold">Period:</label>
+                            <label for="period" class="form-label fw-semibold">
+                                <i class="bi bi-calendar3 text-primary"></i> Period:
+                            </label>
                             <select name="period" id="period" class="form-select">
-                                <option value="all" {% if selected_period == 'all' %}selected{% endif %}>Od uvijek</option>
-                                <option value="year" {% if selected_period == 'year' %}selected{% endif %}>Zadnjih godinu dana</option>
-                                <option value="month" {% if selected_period == 'month' %}selected{% endif %}>Zadnjih mjesec dana</option>
+                                <option value="all" {% if selected_period == 'all' %}selected{% endif %}>📅 Od uvijek</option>
+                                <option value="year" {% if selected_period == 'year' %}selected{% endif %}>📆 Zadnjih godinu dana</option>
+                                <option value="month" {% if selected_period == 'month' %}selected{% endif %}>📋 Zadnjih mjesec dana</option>
                             </select>
                         </div>
                         <div class="col-md-4">
-                            <button type="submit" class="btn btn-primary w-100">🔍 Filtriraj</button>
+                            <button type="submit" class="btn btn-primary w-100 shadow-sm">
+                                <i class="bi bi-search"></i> Prikaži statistiku
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -37,255 +45,543 @@
         </div>
     </div>
 
-    <!-- Prikaz trenutnih filtera -->
+    <!-- Trenutni filteri -->
+    {% if selected_category or selected_period != 'all' %}
     <div class="text-center mb-4">
-        <h5 class="text-muted">
+        <span class="badge bg-secondary fs-6 px-3 py-2">
+            <i class="bi bi-filter"></i>
             {% if selected_category %}
-                {{ selected_category }} • 
+                Kategorija: <strong>{{ selected_category }}</strong>
+                {% if selected_period != 'all' %} • {% endif %}
             {% endif %}
-            {{ period_label }}
-        </h5>
-    </div>
-
-    <!-- STATISTIKE KLUBA -->
-    <div class="card shadow mb-5">
-        <div class="card-header bg-primary text-white">
-            <h4 class="mb-0">🏆 Statistike kluba</h4>
-        </div>
-        <div class="card-body">
-            <div class="row g-4">
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-light rounded">
-                        <h3 class="text-primary">{{ club_stats.total_matches }}</h3>
-                        <p class="mb-0">Ukupno utakmica</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-success bg-opacity-10 rounded">
-                        <h3 class="text-success">{{ club_stats.wins }}</h3>
-                        <p class="mb-0">Pobjede ({{ club_stats.win_percentage }}%)</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-warning bg-opacity-10 rounded">
-                        <h3 class="text-warning">{{ club_stats.draws }}</h3>
-                        <p class="mb-0">Neriješeni</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
-                        <h3 class="text-danger">{{ club_stats.losses }}</h3>
-                        <p class="mb-0">Porazi</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-info bg-opacity-10 rounded">
-                        <h3 class="text-info">{{ club_stats.total_goals_scored }}</h3>
-                        <p class="mb-0">Postignuti golovi</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-secondary bg-opacity-10 rounded">
-                        <h3 class="text-secondary">{{ club_stats.total_goals_conceded }}</h3>
-                        <p class="mb-0">Primljeni golovi</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-success bg-opacity-10 rounded">
-                        <h3 class="text-success">{{ club_stats.goal_difference|add:"+0" }}</h3>
-                        <p class="mb-0">Razlika golova</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="text-center p-3 bg-light rounded">
-                        <h3 class="text-dark">{{ club_stats.avg_goals_scored }}</h3>
-                        <p class="mb-0">Prosjek golova/utakmica</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistike po kategorijama (ako nisu filtrirane) -->
-    {% if not selected_category and category_stats %}
-    <div class="card shadow mb-5">
-        <div class="card-header bg-info text-white">
-            <h4 class="mb-0">📈 Statistike po kategorijama</h4>
-        </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Kategorija</th>
-                            <th>Utakmice</th>
-                            <th>Pobjede</th>
-                            <th>Golovi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for stat in category_stats %}
-                        <tr>
-                            <td><strong>{{ stat.category }}</strong></td>
-                            <td>{{ stat.matches }}</td>
-                            <td>{{ stat.wins }}</td>
-                            <td>{{ stat.goals }}</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
+            {% if selected_period != 'all' %}
+                Period: <strong>{{ period_label }}</strong>
+            {% endif %}
+        </span>
     </div>
     {% endif %}
 
-    <!-- Gumbovi za odabir grafova -->
-    <div class="d-flex flex-wrap justify-content-center gap-2 mb-4">
-        <button onclick="showChart('goals')" class="btn btn-primary">⚽ Golovi</button>
-        <button onclick="showChart('assists')" class="btn btn-success">🎯 Asistencije</button>
-        <button onclick="showChart('appearances')" class="btn btn-secondary">📅 Nastupi</button>
-        <button onclick="showChart('yellow_cards')" class="btn btn-warning">🟨 Žuti kartoni</button>
-        <button onclick="showChart('red_cards')" class="btn btn-danger">🟥 Crveni kartoni</button>
-    </div>
+    <!-- Tab navigacija -->
+    <ul class="nav nav-pills nav-fill mb-4 shadow-sm bg-white rounded p-2" id="statsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" id="club-tab" data-bs-toggle="tab" data-bs-target="#club" type="button">
+                <i class="bi bi-building"></i> STATISTIKA KLUBA
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" id="players-tab" data-bs-toggle="tab" data-bs-target="#players" type="button">
+                <i class="bi bi-people-fill"></i> STATISTIKA IGRAČA
+            </button>
+        </li>
+    </ul>
 
-    <!-- Graf -->
-    <div class="card shadow py-4 px-3">
-        <div class="chart-container" style="width: 100%; max-width: 1000px; margin: auto;">
-            <canvas id="playerChart"></canvas>
-        </div>
-    </div>
-
-    <!-- Legende -->
-    <div class="row mt-4">
-        <div class="col-md-6">
-            <div class="card">
+    <!-- Tab sadržaj -->
+    <div class="tab-content" id="statsTabContent">
+        
+        <!-- STATISTIKE KLUBA TAB -->
+        <div class="tab-pane fade show active" id="club" role="tabpanel">
+            
+            <!-- Glavni brojevi -->
+            <div class="card shadow mb-4 border-0">
                 <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">🏆 Top 5 strijelaca</h5>
+                    <h5 class="mb-0"><i class="bi bi-trophy"></i> Rezultati utakmica</h5>
                 </div>
                 <div class="card-body">
-                    <ol class="list-group list-group-numbered list-group-flush">
-                        {% for player in goals|slice:":5" %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>{{ player.name }}</span>
-                            <span class="badge bg-primary">{{ player.value }}</span>
-                        </li>
-                        {% empty %}
-                        <li class="list-group-item text-muted">Nema podataka</li>
-                        {% endfor %}
-                    </ol>
+                    <div class="row text-center g-3">
+                        <div class="col-md-3 col-6">
+                            <div class="stat-card p-4 rounded bg-light h-100">
+                                <i class="bi bi-calendar-check display-4 text-primary mb-2"></i>
+                                <h3 class="fw-bold">{{ club_stats.total_matches }}</h3>
+                                <p class="text-muted mb-0">Ukupno utakmica</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="stat-card p-4 rounded bg-success bg-opacity-10 h-100">
+                                <i class="bi bi-check-circle display-4 text-success mb-2"></i>
+                                <h3 class="fw-bold text-success">{{ club_stats.wins }}</h3>
+                                <p class="text-muted mb-0">Pobjede</p>
+                                <small class="text-success fw-bold">({{ club_stats.win_percentage }}%)</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="stat-card p-4 rounded bg-warning bg-opacity-10 h-100">
+                                <i class="bi bi-dash-circle display-4 text-warning mb-2"></i>
+                                <h3 class="fw-bold text-warning">{{ club_stats.draws }}</h3>
+                                <p class="text-muted mb-0">Neriješeni</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="stat-card p-4 rounded bg-danger bg-opacity-10 h-100">
+                                <i class="bi bi-x-circle display-4 text-danger mb-2"></i>
+                                <h3 class="fw-bold text-danger">{{ club_stats.losses }}</h3>
+                                <p class="text-muted mb-0">Porazi</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Golovi statistika -->
+            <div class="card shadow mb-4 border-0">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="bi bi-bullseye"></i> Statistika golova</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center g-3">
+                        <div class="col-md-3 col-6">
+                            <div class="goal-stat p-3 rounded bg-light">
+                                <i class="bi bi-arrow-up-circle-fill text-success fs-1"></i>
+                                <h4 class="mt-2 text-success">{{ club_stats.total_goals_scored }}</h4>
+                                <p class="text-muted mb-0">Postignuti golovi</p>
+                                <small class="text-secondary">Prosjek: {{ club_stats.avg_goals_scored }}/utakmica</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="goal-stat p-3 rounded bg-light">
+                                <i class="bi bi-arrow-down-circle-fill text-danger fs-1"></i>
+                                <h4 class="mt-2 text-danger">{{ club_stats.total_goals_conceded }}</h4>
+                                <p class="text-muted mb-0">Primljeni golovi</p>
+                                <small class="text-secondary">Prosjek: {{ club_stats.avg_goals_conceded }}/utakmica</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="goal-stat p-3 rounded bg-light">
+                                <i class="bi bi-graph-up-arrow fs-1 {% if club_stats.goal_difference >= 0 %}text-success{% else %}text-danger{% endif %}"></i>
+                                <h4 class="mt-2 {% if club_stats.goal_difference >= 0 %}text-success{% else %}text-danger{% endif %}">
+                                    {% if club_stats.goal_difference >= 0 %}+{% endif %}{{ club_stats.goal_difference }}
+                                </h4>
+                                <p class="text-muted mb-0">Gol razlika</p>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-6">
+                            <div class="goal-stat p-3 rounded bg-light">
+                                <i class="bi bi-calculator-fill text-primary fs-1"></i>
+                                <h4 class="mt-2 text-primary">{{ club_stats.avg_goals_scored }}</h4>
+                                <p class="text-muted mb-0">Prosjek golova</p>
+                                <small class="text-secondary">po utakmici</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Statistike po kategorijama -->
+            {% if not selected_category and category_stats %}
+            <div class="card shadow border-0">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-list-task"></i> Statistike po kategorijama</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="ps-4">Kategorija</th>
+                                    <th class="text-center">Utakmice</th>
+                                    <th class="text-center">Pobjede</th>
+                                    <th class="text-center">Golovi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for stat in category_stats %}
+                                <tr>
+                                    <td class="ps-4">
+                                        <span class="badge bg-secondary">{{ stat.category }}</span>
+                                    </td>
+                                    <td class="text-center">{{ stat.matches }}</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success">{{ stat.wins }}</span>
+                                    </td>
+                                    <td class="text-center">{{ stat.goals }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- STATISTIKE IGRAČA TAB -->
+        <div class="tab-pane fade" id="players" role="tabpanel">
+            
+            <!-- Gumbovi za odabir grafova -->
+            <div class="card shadow-sm mb-4 border-0">
+                <div class="card-body bg-light">
+                    <div class="d-flex flex-wrap justify-content-center gap-2">
+                        <button onclick="showChart('goals')" class="btn btn-primary chart-btn" id="btn-goals">
+                            ⚽ Golovi
+                        </button>
+                        <button onclick="showChart('assists')" class="btn btn-outline-success chart-btn" id="btn-assists">
+                            🎯 Asistencije
+                        </button>
+                        <button onclick="showChart('appearances')" class="btn btn-outline-info chart-btn" id="btn-appearances">
+                            📅 Nastupi
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Graf -->
+            <div class="card shadow mb-4 border-0">
+                <div class="card-body p-4">
+                    <div style="height: 400px;">
+                        <canvas id="playerChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top liste -->
+            <div class="row g-4">
+                <!-- Top strijelci -->
+                <div class="col-md-6">
+                    <div class="card shadow border-0 h-100">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-award-fill"></i> Top 5 strijelaca
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% for player in goals|slice:":5" %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-primary rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            {{ forloop.counter }}
+                                        </span>
+                                        <div>
+                                            <strong>{{ player.name }}</strong>
+                                            {% if player.category %}
+                                                <small class="text-muted d-block">{{ player.category }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-primary rounded-pill px-3 py-2">{{ player.value }}</span>
+                                </div>
+                                {% empty %}
+                                <div class="list-group-item text-center text-muted py-4">
+                                    Nema podataka
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top asistenti -->
+                <div class="col-md-6">
+                    <div class="card shadow border-0 h-100">
+                        <div class="card-header bg-success text-white">
+                            <h5 class="mb-0">
+                                <i class="bi bi-award-fill"></i> Top 5 asistenata
+                            </h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <div class="list-group list-group-flush">
+                                {% for player in assists|slice:":5" %}
+                                <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge bg-success rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                            {{ forloop.counter }}
+                                        </span>
+                                        <div>
+                                            <strong>{{ player.name }}</strong>
+                                            {% if player.category %}
+                                                <small class="text-muted d-block">{{ player.category }}</small>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-success rounded-pill px-3 py-2">{{ player.value }}</span>
+                                </div>
+                                {% empty %}
+                                <div class="list-group-item text-center text-muted py-4">
+                                    Nema podataka
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                <div class="card shadow border-0 h-100">
+                    <div class="card-header bg-warning text-dark">
+                        <h5 class="mb-0">
+                            🟨 Top 5 žutih kartona
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for player in yellow_cards|slice:":5" %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-warning text-dark rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                        {{ forloop.counter }}
+                                    </span>
+                                    <div>
+                                        <strong>{{ player.name }}</strong>
+                                        {% if player.category %}
+                                            <small class="text-muted d-block">{{ player.category }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2">{{ player.value }}</span>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-center text-muted py-4">
+                                Nema podataka
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div> 
+                </div>
+            </div>
+
+            <!-- Top crveni kartoni -->
+            <div class="col-md-6">
+                <div class="card shadow border-0 h-100">
+                    <div class="card-header bg-danger text-white">
+                        <h5 class="mb-0">
+                            🟥 Top 5 crvenih kartona
+                        </h5>
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="list-group list-group-flush">
+                            {% for player in red_cards|slice:":5" %}
+                            <div class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <div class="d-flex align-items-center">
+                                    <span class="badge bg-danger rounded-circle me-3" style="width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">
+                                        {{ forloop.counter }}
+                                    </span>
+                                    <div>
+                                        <strong>{{ player.name }}</strong>
+                                        {% if player.category %}
+                                            <small class="text-muted d-block">{{ player.category }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <span class="badge bg-danger rounded-pill px-3 py-2">{{ player.value }}</span>
+                            </div>
+                            {% empty %}
+                            <div class="list-group-item text-center text-muted py-4">
+                                Nema podataka
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0">🎯 Top 5 asistenta</h5>
-                </div>
-                <div class="card-body">
-                    <ol class="list-group list-group-numbered list-group-flush">
-                        {% for player in assists|slice:":5" %}
-                        <li class="list-group-item d-flex justify-content-between">
-                            <span>{{ player.name }}</span>
-                            <span class="badge bg-success">{{ player.value }}</span>
-                        </li>
-                        {% empty %}
-                        <li class="list-group-item text-muted">Nema podataka</li>
-                        {% endfor %}
-                    </ol>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+
+<style>
+    /* Stat cards hover effect */
+    .stat-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+
+    /* Goal stats styling */
+    .goal-stat {
+        transition: all 0.2s ease;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+    .goal-stat:hover {
+        background: white !important;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    /* Chart buttons */
+    .chart-btn {
+        min-width: 140px;
+        font-weight: 500;
+        transition: all 0.2s ease;
+    }
+    .chart-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    }
+
+    /* Nav pills custom */
+    .nav-pills .nav-link {
+        color: #6c757d;
+        font-weight: 600;
+        padding: 10px 20px;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    .nav-pills .nav-link:hover {
+        background-color: #f8f9fa;
+    }
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd;
+        box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3);
+    }
+
+    /* Cards */
+    .card {
+        border-radius: 0.5rem;
+    }
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        font-weight: 600;
+    }
+
+    /* Table hover */
+    .table-hover tbody tr:hover {
+        background-color: rgba(0,0,0,0.02);
+    }
+
+    /* List group items */
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+    }
+    .list-group-item:hover {
+        background-color: #f8f9fa;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .stat-card {
+            padding: 1rem !important;
+        }
+        .display-4 {
+            font-size: 2rem;
+        }
+    }
+</style>
 
 <script>
     const dataSets = {
         goals: {{ goals|safe }},
         assists: {{ assists|safe }},
         appearances: {{ appearances|safe }},
-        yellow_cards: {{ yellow_cards|safe }},
-        red_cards: {{ red_cards|safe }},
     };
 
-    const colors = [
-        '#EF4444', '#3B82F6', '#10B981', '#F59E0B', '#6366F1', 
-        '#EC4899', '#8B5CF6', '#22D3EE', '#F97316', '#84CC16',
-        '#F43F5E', '#06B6D4', '#8B5A2B', '#059669', '#7C3AED'
-    ];
-
-    const ctx = document.getElementById('playerChart').getContext('2d');
-    let chart;
+    let playerChart = null;
+    let currentChartType = null;
 
     function showChart(type) {
+        if (currentChartType === type) return; // već prikazujemo taj tip
+        currentChartType = type;
+
+        // Update button states
+        document.querySelectorAll('.chart-btn').forEach(btn => {
+            btn.classList.remove('btn-primary', 'btn-success', 'btn-info', 'btn-warning', 'btn-danger',
+                                 'btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'btn-outline-warning', 'btn-outline-danger');
+            const btnType = btn.id.replace('btn-', '');
+            const outlineClass = {
+                goals: 'btn-outline-primary',
+                assists: 'btn-outline-success',
+                appearances: 'btn-outline-info',
+                yellow_cards: 'btn-outline-warning',
+                red_cards: 'btn-outline-danger'
+            }[btnType];
+            btn.classList.add(outlineClass);
+        });
+
+        const activeBtn = document.getElementById('btn-' + type);
+        activeBtn.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-info', 'btn-outline-warning', 'btn-outline-danger');
+        const solidClass = {
+            goals: 'btn-primary',
+            assists: 'btn-success',
+            appearances: 'btn-info',
+            yellow_cards: 'btn-warning',
+            red_cards: 'btn-danger'
+        }[type];
+        activeBtn.classList.add(solidClass);
+
         const data = dataSets[type];
         const labels = data.map(item => item.name);
         const values = data.map(item => item.value);
-        const backgroundColors = colors.slice(0, labels.length);
 
         let chartTitle = '';
+        let bgColor = 'rgba(13, 110, 253, 0.7)';
+
         switch(type) {
-            case 'goals': chartTitle = 'Golovi'; break;
-            case 'assists': chartTitle = 'Asistencije'; break;
-            case 'appearances': chartTitle = 'Nastupi'; break;
-            case 'yellow_cards': chartTitle = 'Žuti kartoni'; break;
-            case 'red_cards': chartTitle = 'Crveni kartoni'; break;
+            case 'goals': chartTitle = '⚽ Najbolji strijelci'; bgColor = 'rgba(13, 110, 253, 0.7)'; break;
+            case 'assists': chartTitle = '🎯 Najbolji asistenti'; bgColor = 'rgba(25, 135, 84, 0.7)'; break;
+            case 'appearances': chartTitle = '📅 Najviše nastupa'; bgColor = 'rgba(13, 202, 240, 0.7)'; break;
         }
 
-        if (chart) chart.destroy();
+        const ctx = document.getElementById('playerChart').getContext('2d');
 
-        chart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: chartTitle,
-                    data: values,
-                    backgroundColor: backgroundColors,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1 }
-                    }
+        if (!playerChart) {
+            // Kreiramo graf samo jednom
+            playerChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: chartTitle.split(' ').slice(1).join(' '),
+                        data: values,
+                        backgroundColor: bgColor,
+                        borderColor: bgColor.replace('0.7', '1'),
+                        borderWidth: 2,
+                        borderRadius: 5
+                    }]
                 },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: chartTitle,
-                        font: { size: 16 }
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    animation: false,
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: chartTitle,
+                            font: { size: 18, weight: 'bold' },
+                            padding: 20
+                        },
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0,0,0,0.8)',
+                            padding: 10,
+                            cornerRadius: 5,
+                            displayColors: false
+                        }
                     },
-                    legend: { display: false }
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: { stepSize: 1, font: { size: 12 } },
+                            grid: { color: 'rgba(0,0,0,0.05)' }
+                        },
+                        x: {
+                            ticks: { font: { size: 11 }, maxRotation: 45, minRotation: 45 },
+                            grid: { display: false }
+                        }
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            // Samo ažuriramo postojeći graf
+            playerChart.data.labels = labels;
+            playerChart.data.datasets[0].data = values;
+            playerChart.data.datasets[0].backgroundColor = bgColor;
+            playerChart.data.datasets[0].borderColor = bgColor.replace('0.7', '1');
+            playerChart.options.plugins.title.text = chartTitle;
+            playerChart.update();
+        }
     }
 
-    // Prikaži golove po defaultu
-    showChart('goals');
+    document.addEventListener('DOMContentLoaded', function() {
+        const playersTab = document.getElementById('players-tab');
+        playersTab.addEventListener('shown.bs.tab', function() {
+            setTimeout(() => showChart('goals'));
+        });
+    });
 
-    // Auto-submit forme kada se promijeni vrijednost
-    document.getElementById('category').addEventListener('change', function() {
+    document.getElementById('category')?.addEventListener('change', function() {
         this.form.submit();
     });
-    document.getElementById('period').addEventListener('change', function() {
+    document.getElementById('period')?.addEventListener('change', function() {
         this.form.submit();
     });
 </script>
 
-<style>
-    .chart-container {
-        height: 400px;
-    }
-    
-    @media (max-width: 768px) {
-        .chart-container {
-            height: 300px;
-        }
-    }
-</style>
 
 {% endblock %}
