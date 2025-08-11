@@ -51,20 +51,15 @@ class Player(models.Model):
             else:
                 return "Aktivan član"
         else:
-            # Check if there's a future reactivation date
             if self.member_until and self.member_until > today:
                 return f"Neaktivan (bio član, ponovno aktivan od {self.member_until.strftime('%d.%m.%Y')})"
             else:
                 return "Neaktivan član"
     
     def save(self, *args, **kwargs):
-        # If reactivating a player
-        if self.pk:  # Only for existing players
+        if self.pk:  
             old_player = Player.objects.get(pk=self.pk)
-            
-            # If switching from inactive to active
             if not old_player.is_active_member and self.is_active_member:
-                # Create membership history record
                 MembershipHistory.objects.create(
                     player=self,
                     action='REACTIVATED',
@@ -72,9 +67,7 @@ class Player(models.Model):
                     date_until=self.member_until,
                     notes=f"Ponovno aktiviran {date.today().strftime('%d.%m.%Y')}"
                 )
-            # If deactivating
             elif old_player.is_active_member and not self.is_active_member:
-                # Create deactivation record
                 MembershipHistory.objects.create(
                     player=self,
                     action='DEACTIVATED',

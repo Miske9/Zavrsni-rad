@@ -3,7 +3,6 @@
 
 {% block content %}
 <div class="container my-4">
-  <!-- Category Filter -->
   <div class="card shadow-sm mb-4">
     <div class="card-body">
       <form method="get" class="row g-3">
@@ -19,13 +18,10 @@
       </form>
     </div>
   </div>
-
-  <!-- Main Form -->
   <form method="post" id="match-form" novalidate>
     {% csrf_token %}
     <input type="hidden" name="category" value="{{ request.GET.category|default:form.category.value }}">
 
-    <!-- Basic Data -->
     <div class="card shadow mb-4">
       <div class="card-header bg-primary text-white">
         <h4 class="mb-0">⚽ Osnovni podaci</h4>
@@ -63,15 +59,12 @@
         </div>
       </div>
     </div>
-
     {% if request.GET.category or form.category.value %}
-    <!-- Players Selection with Better UI -->
     <div class="card shadow mb-4">
       <div class="card-header bg-success text-white">
         <h4 class="mb-0">👥 Igrači</h4>
       </div>
       <div class="card-body">
-        <!-- Starting XI -->
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="text-primary mb-0">⚽ Startna postava</h5>
@@ -91,8 +84,6 @@
             {% endfor %}
           </div>
         </div>
-
-        <!-- Bench -->
         <div class="mb-4">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <h5 class="text-secondary mb-0">🪑 Klupa</h5>
@@ -112,8 +103,6 @@
             {% endfor %}
           </div>
         </div>
-
-        <!-- Captain and Goalkeeper -->
         <div class="row g-3">
           <div class="col-md-6">
             <label class="form-label fw-semibold">
@@ -144,20 +133,17 @@
         </div>
       </div>
     </div>
-
-    <!-- Events Accordion -->
     <div class="card shadow mb-4">
       <div class="card-header bg-dark text-white">
         <h4 class="mb-0">📋 Događaji utakmice</h4>
       </div>
       <div class="card-body">
         <div class="accordion" id="eventsAccordion">
-          <!-- Goals -->
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGoals">
                 <span class="me-2">⚽</span> <strong>Golovi</strong>
-                <span class="badge bg-primary ms-auto me-2" id="goalCount">0</span>
+                <span class="badge bg-primary me-2" id="goalCount">0</span>
               </button>
             </h2>
             <div id="collapseGoals" class="accordion-collapse collapse show">
@@ -179,7 +165,7 @@
                         </div>
                         <div class="col-md-4">
                           <input type="number" name="{{ form.minute.html_name }}" 
-                                 class="form-control" placeholder="Minuta" min="1" max="120"
+                                 class="form-control" placeholder="Minuta" min="1" max="90"
                                  value="{{ form.minute.value|default:'' }}">
                         </div>
                       </div>
@@ -192,13 +178,11 @@
               </div>
             </div>
           </div>
-
-          <!-- Assists -->
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseAssists">
                 <span class="me-2">🎯</span> <strong>Asistencije</strong>
-                <span class="badge bg-info ms-auto me-2" id="assistCount">0</span>
+                <span class="badge bg-info me-2" id="assistCount">0</span>
               </button>
             </h2>
             <div id="collapseAssists" class="accordion-collapse collapse">
@@ -220,7 +204,7 @@
                         </div>
                         <div class="col-md-4">
                           <input type="number" name="{{ form.minute.html_name }}" 
-                                 class="form-control" placeholder="Minuta" min="1" max="120"
+                                 class="form-control" placeholder="Minuta" min="1" max="90"
                                  value="{{ form.minute.value|default:'' }}">
                         </div>
                       </div>
@@ -233,13 +217,11 @@
               </div>
             </div>
           </div>
-
-          <!-- Cards -->
           <div class="accordion-item">
             <h2 class="accordion-header">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseCards">
                 <span class="me-2">🟨🟥</span> <strong>Kartoni</strong>
-                <span class="badge bg-warning text-dark ms-auto me-2" id="cardCount">0</span>
+                <span class="badge bg-warning text-dark me-2" id="cardCount">0</span>
               </button>
             </h2>
             <div id="collapseCards" class="accordion-collapse collapse">
@@ -268,7 +250,7 @@
                         </div>
                         <div class="col-md-3">
                           <input type="number" name="{{ form.minute.html_name }}" 
-                                 class="form-control" placeholder="Min" min="1" max="120"
+                                 class="form-control" placeholder="Min" min="1" max="90"
                                  value="{{ form.minute.value|default:'' }}">
                         </div>
                       </div>
@@ -289,7 +271,6 @@
       <i class="bi bi-info-circle"></i> Odaberite kategoriju prije unosa podataka.
     </div>
     {% endif %}
-
     <div class="d-flex justify-content-end gap-2 mt-4">
       <a href="{% url 'main:match_list' %}" class="btn btn-outline-secondary">Odustani</a>
       {% if request.GET.category or form.category.value %}
@@ -350,6 +331,11 @@
     background-color: #fff;
     border-color: #0d6efd;
   }
+
+  .badge {
+  margin-left: 0.3rem;
+  vertical-align: middle; 
+}
   
   .remove-btn {
     position: absolute;
@@ -364,92 +350,67 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Player selection limits
     const MAX_STARTERS = 11;
     const MAX_BENCH = 7;
-    
-    // Prevent over-selection of players
     function enforcePlayerLimits() {
         const startingInputs = document.querySelectorAll('input[name="starting_players"]');
         const benchInputs = document.querySelectorAll('input[name="bench_players"]');
-        
-        // Handle starting players
         startingInputs.forEach(input => {
             input.addEventListener('change', function(e) {
                 const checkedStarters = document.querySelectorAll('input[name="starting_players"]:checked');
-                
                 if (checkedStarters.length > MAX_STARTERS) {
                     e.target.checked = false;
                     alert(`Maksimalno ${MAX_STARTERS} igrača u početnoj postavi!`);
                 }
-                
-                // Prevent same player in both starting and bench
                 if (e.target.checked) {
                     const benchInput = document.querySelector(`input[name="bench_players"][value="${e.target.value}"]`);
                     if (benchInput && benchInput.checked) {
                         benchInput.checked = false;
                     }
                 }
-                
                 updatePlayerCounts();
                 updateAllEventSelects();
             });
         });
-        
-        // Handle bench players
         benchInputs.forEach(input => {
             input.addEventListener('change', function(e) {
                 const checkedBench = document.querySelectorAll('input[name="bench_players"]:checked');
-                
                 if (checkedBench.length > MAX_BENCH) {
                     e.target.checked = false;
                     alert(`Maksimalno ${MAX_BENCH} igrača na klupi!`);
                 }
-                
-                // Prevent same player in both starting and bench
                 if (e.target.checked) {
                     const startingInput = document.querySelector(`input[name="starting_players"][value="${e.target.value}"]`);
                     if (startingInput && startingInput.checked) {
                         startingInput.checked = false;
                     }
                 }
-                
                 updatePlayerCounts();
                 updateAllEventSelects();
             });
         });
     }
-    
-    // Player counters
     function updatePlayerCounts() {
         const startingCount = document.querySelectorAll('input[name="starting_players"]:checked').length;
         const benchCount = document.querySelectorAll('input[name="bench_players"]:checked').length;
-        
         const startingBadge = document.getElementById('startingCount');
         const benchBadge = document.getElementById('benchCount');
         
         startingBadge.textContent = `${startingCount} / ${MAX_STARTERS}`;
         benchBadge.textContent = `${benchCount} / ${MAX_BENCH}`;
-        
-        // Change badge color based on count
         startingBadge.className = startingCount === MAX_STARTERS ? 'badge bg-success' : 
                                   startingCount > MAX_STARTERS ? 'badge bg-danger' : 'badge bg-primary';
         benchBadge.className = benchCount === MAX_BENCH ? 'badge bg-success' : 
                                benchCount > MAX_BENCH ? 'badge bg-danger' : 'badge bg-secondary';
-        
-        // Update captain and goalkeeper selects
         updateSpecialSelects();
     }
-    
     function updateSpecialSelects() {
         const startingPlayers = document.querySelectorAll('input[name="starting_players"]:checked');
         const captainSelect = document.getElementById('captain-select');
         const goalkeeperSelect = document.getElementById('goalkeeper-select');
-        
         const currentCaptain = captainSelect.value;
         const currentGoalkeeper = goalkeeperSelect.value;
         
-        // Clear and rebuild options
         captainSelect.innerHTML = '<option value="">-- Odaberi kapetana --</option>';
         goalkeeperSelect.innerHTML = '<option value="">-- Odaberi golmana --</option>';
         
@@ -458,21 +419,15 @@ document.addEventListener('DOMContentLoaded', function() {
             if (label) {
                 const option1 = new Option(label.textContent, input.value);
                 const option2 = new Option(label.textContent, input.value);
-                
                 if (input.value === currentCaptain) option1.selected = true;
                 if (input.value === currentGoalkeeper) option2.selected = true;
-                
                 captainSelect.add(option1);
                 goalkeeperSelect.add(option2);
             }
         });
     }
-    
-    // Initialize player limits
     enforcePlayerLimits();
     updatePlayerCounts();
-    
-    // Get selected players for events
     function getSelectedPlayers() {
         const players = [];
         document.querySelectorAll('input[name="starting_players"]:checked, input[name="bench_players"]:checked').forEach(input => {
@@ -483,8 +438,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         return players;
     }
-    
-    // Update all event select boxes with current players
     function updateAllEventSelects() {
         const players = getSelectedPlayers();
         
@@ -499,8 +452,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
     }
-    
-    // Dynamic form management for events
     class EventFormManager {
         constructor(type) {
             this.type = type;
@@ -508,38 +459,28 @@ document.addEventListener('DOMContentLoaded', function() {
             this.addBtn = document.getElementById(`add-${type}-btn`);
             this.totalFormsInput = document.querySelector(`input[name="${type}s-TOTAL_FORMS"]`);
             this.formCount = this.container.querySelectorAll('.event-form').length;
-            
             this.init();
         }
-        
         init() {
-            // Add remove buttons to existing forms (except first)
             this.container.querySelectorAll('.event-form').forEach((form, index) => {
                 if (index > 0) {
                     this.addRemoveButton(form);
                 }
             });
-            
-            // Setup add button
             this.addBtn.addEventListener('click', () => this.addForm());
-            
-            // Update count
             this.updateCount();
         }
-        
         addForm() {
             if (this.formCount >= 10) {
                 alert('Maksimalno 10 događaja!');
                 return;
             }
-            
             const newForm = this.createForm();
             this.container.appendChild(newForm);
             this.formCount++;
             this.updateCount();
             updateAllEventSelects();
         }
-        
         createForm() {
             const div = document.createElement('div');
             div.className = 'event-form mb-3';
@@ -549,7 +490,6 @@ document.addEventListener('DOMContentLoaded', function() {
             players.forEach(p => {
                 playerOptions += `<option value="${p.value}">${p.text}</option>`;
             });
-            
             if (this.type === 'goal') {
                 div.innerHTML = `
                     <div class="row g-3">
@@ -560,7 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="col-md-4">
                             <input type="number" name="goals-${this.formCount}-minute" 
-                                   class="form-control" placeholder="Minuta" min="1" max="120">
+                                   class="form-control" placeholder="Minuta" min="1" max="90">
                         </div>
                     </div>
                 `;
@@ -574,7 +514,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="col-md-4">
                             <input type="number" name="assists-${this.formCount}-minute" 
-                                   class="form-control" placeholder="Minuta" min="1" max="120">
+                                   class="form-control" placeholder="Minuta" min="1" max="90">
                         </div>
                     </div>
                 `;
@@ -595,16 +535,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <div class="col-md-3">
                             <input type="number" name="cards-${this.formCount}-minute" 
-                                   class="form-control" placeholder="Min" min="1" max="120">
+                                   class="form-control" placeholder="Min" min="1" max="90">
                         </div>
                     </div>
                 `;
             }
-            
             this.addRemoveButton(div);
             return div;
         }
-        
         addRemoveButton(formDiv) {
             const removeBtn = document.createElement('button');
             removeBtn.type = 'button';
@@ -614,27 +552,22 @@ document.addEventListener('DOMContentLoaded', function() {
             formDiv.style.position = 'relative';
             formDiv.appendChild(removeBtn);
         }
-        
         removeForm(formDiv) {
             formDiv.remove();
             this.formCount--;
             this.updateCount();
             this.renumberForms();
         }
-        
         renumberForms() {
             this.container.querySelectorAll('.event-form').forEach((form, index) => {
-                // Update input names
                 const playerSelect = form.querySelector('select[name*="player"]');
                 const minuteInput = form.querySelector('input[name*="minute"]');
-                
                 if (playerSelect) {
                     playerSelect.name = `${this.type}s-${index}-player`;
                 }
                 if (minuteInput) {
                     minuteInput.name = `${this.type}s-${index}-minute`;
                 }
-                
                 if (this.type === 'card') {
                     const cardTypeSelect = form.querySelector('select[name*="card_type"]');
                     if (cardTypeSelect) {
@@ -643,11 +576,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         }
-        
         updateCount() {
             this.totalFormsInput.value = this.formCount;
-            
-            // Update visual counter
             let filledCount = 0;
             this.container.querySelectorAll('.event-form').forEach(form => {
                 const playerSelect = form.querySelector('select[name*="player"]');
@@ -658,14 +588,11 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById(`${this.type}Count`).textContent = filledCount;
         }
     }
-    
-    // Initialize event managers if category is selected
     if (document.querySelector('input[name="category"]')?.value) {
         const goalManager = new EventFormManager('goal');
         const assistManager = new EventFormManager('assist');
         const cardManager = new EventFormManager('card');
         
-        // Update counts when events change
         ['goal', 'assist', 'card'].forEach(type => {
             const container = document.getElementById(`${type}-forms-container`);
             if (container) {
@@ -681,8 +608,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
-        
-        // Validate goals match score on submit
         const form = document.getElementById('match-form');
         form.addEventListener('submit', function(e) {
             const homeScore = parseInt(document.querySelector('input[name="home_score"]').value) || 0;
@@ -695,13 +620,11 @@ document.addEventListener('DOMContentLoaded', function() {
                     goalsEntered++;
                 }
             });
-            
             if (homeScore !== goalsEntered) {
                 e.preventDefault();
                 alert(`Broj golova (${goalsEntered}) mora odgovarati rezultatu (${homeScore})!`);
                 return false;
             }
-            
             form.classList.add('was-validated');
         });
     }

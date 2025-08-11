@@ -25,7 +25,6 @@
         <strong>📘 Trenutna kategorija:</strong> {{ player.category }}
       </li>
 
-      <!-- Membership History -->
       {% if player.membership_history.exists %}
       <li class="list-group-item">
         <strong>📋 Povijest članstva:</strong>
@@ -65,8 +64,6 @@
         </div>
       </li>
       {% endif %}
-
-      <!-- Category History -->
       <li class="list-group-item">
         <strong>📚 Kategorije u kojima je igrao:</strong>
         <ul class="mb-0">
@@ -77,8 +74,6 @@
           {% endfor %}
         </ul>
       </li>
-      
-      <!-- Statistics -->
       <li class="list-group-item">
         <strong>📊 Statistika:</strong>
         <div class="row mt-2">

@@ -6,8 +6,6 @@
     <h1 class="text-center fw-bold mb-4">
         <i class="bi bi-bar-chart-line"></i> Statistika NK Smoljanci Sloboda
     </h1>
-
-    <!-- Filteri -->
     <div class="row justify-content-center mb-4">
         <div class="col-lg-8">
             <div class="card shadow-sm border-0">
@@ -44,8 +42,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Trenutni filteri -->
     {% if selected_category or selected_period != 'all' %}
     <div class="text-center mb-4">
         <span class="badge bg-secondary fs-6 px-3 py-2">
@@ -60,8 +56,6 @@
         </span>
     </div>
     {% endif %}
-
-    <!-- Tab navigacija -->
     <ul class="nav nav-pills nav-fill mb-4 shadow-sm bg-white rounded p-2" id="statsTab" role="tablist">
         <li class="nav-item" role="presentation">
             <button class="nav-link active" id="club-tab" data-bs-toggle="tab" data-bs-target="#club" type="button">
@@ -74,14 +68,8 @@
             </button>
         </li>
     </ul>
-
-    <!-- Tab sadržaj -->
     <div class="tab-content" id="statsTabContent">
-        
-        <!-- STATISTIKE KLUBA TAB -->
         <div class="tab-pane fade show active" id="club" role="tabpanel">
-            
-            <!-- Glavni brojevi -->
             <div class="card shadow mb-4 border-0">
                 <div class="card-header bg-primary text-white">
                     <h5 class="mb-0"><i class="bi bi-trophy"></i> Rezultati utakmica</h5>
@@ -120,8 +108,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Golovi statistika -->
             <div class="card shadow mb-4 border-0">
                 <div class="card-header bg-info text-white">
                     <h5 class="mb-0"><i class="bi bi-bullseye"></i> Statistika golova</h5>
@@ -164,8 +150,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Statistike po kategorijama -->
             {% if not selected_category and category_stats %}
             <div class="card shadow border-0">
                 <div class="card-header bg-secondary text-white">
@@ -202,11 +186,7 @@
             </div>
             {% endif %}
         </div>
-
-        <!-- STATISTIKE IGRAČA TAB -->
         <div class="tab-pane fade" id="players" role="tabpanel">
-            
-            <!-- Gumbovi za odabir grafova -->
             <div class="card shadow-sm mb-4 border-0">
                 <div class="card-body bg-light">
                     <div class="d-flex flex-wrap justify-content-center gap-2">
@@ -222,8 +202,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Graf -->
             <div class="card shadow mb-4 border-0">
                 <div class="card-body p-4">
                     <div style="height: 400px; position: relative;">
@@ -236,10 +214,7 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Top liste -->
             <div class="row g-4">
-                <!-- Top strijelci -->
                 <div class="col-md-6">
                     <div class="card shadow border-0 h-100">
                         <div class="card-header bg-primary text-white">
@@ -273,8 +248,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Top asistenti -->
                 <div class="col-md-6">
                     <div class="card shadow border-0 h-100">
                         <div class="card-header bg-success text-white">
@@ -308,8 +281,6 @@
                         </div>
                     </div>
                 </div>
-
-                <!-- Top žuti kartoni -->
                 <div class="col-md-6">
                     <div class="card shadow border-0 h-100">
                         <div class="card-header bg-warning text-dark">
@@ -343,8 +314,6 @@
                         </div>
                     </div> 
                 </div>
-
-                <!-- Top crveni kartoni -->
                 <div class="col-md-6">
                     <div class="card shadow border-0 h-100">
                         <div class="card-header bg-danger text-white">
@@ -459,7 +428,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Data sets - make sure they're properly formatted
     const dataSets = {
         goals: {{ goals|default:"[]"|safe }},
         assists: {{ assists|default:"[]"|safe }},
@@ -471,8 +439,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function showChart(type) {
         currentChartType = type;
-
-        // Update button states
         document.querySelectorAll('.chart-btn').forEach(btn => {
             btn.classList.remove('btn-primary', 'btn-success', 'btn-info');
             const btnType = btn.id.replace('btn-', '');
@@ -485,8 +451,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 btn.classList.add('btn-outline-info');
             }
         });
-
-        // Activate selected button
         const activeBtn = document.getElementById('btn-' + type);
         if (activeBtn) {
             activeBtn.classList.remove('btn-outline-primary', 'btn-outline-success', 'btn-outline-info');
@@ -498,14 +462,10 @@ document.addEventListener('DOMContentLoaded', function() {
             }[type];
             activeBtn.classList.add(solidClass);
         }
-
-        // Hide loading spinner
         const loading = document.getElementById('chartLoading');
         if (loading) loading.style.display = 'none';
-
-        // Get data for current type
         const data = dataSets[type] || [];
-        console.log('Data for', type, ':', data); // Debug log
+        console.log('Data for', type, ':', data); 
         
         const limitedData = data.slice(0, 10);
         const labels = limitedData.map(item => item.name || 'N/A');
@@ -528,22 +488,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 bgColor = 'rgba(13, 202, 240, 0.7)'; 
                 break;
         }
-
         const canvas = document.getElementById('playerChart');
         if (!canvas) {
             console.error('Canvas element not found');
             return;
         }
-        
         const ctx = canvas.getContext('2d');
-
-        // Destroy existing chart
         if (playerChart) {
             playerChart.destroy();
             playerChart = null;
         }
-
-        // Create new chart
         try {
             playerChart = new Chart(ctx, {
                 type: 'bar',
@@ -604,17 +558,12 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             });
-            
             console.log('Chart created successfully for', type);
         } catch (error) {
             console.error('Error creating chart:', error);
         }
     }
-
-    // Make showChart globally accessible
     window.showChart = showChart;
-
-    // Initialize chart when players tab is shown
     const playersTab = document.getElementById('players-tab');
     if (playersTab) {
         playersTab.addEventListener('shown.bs.tab', function() {
@@ -623,8 +572,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 100);
         });
     }
-
-    // Handle filter changes
     const categorySelect = document.getElementById('category');
     const periodSelect = document.getElementById('period');
     
@@ -633,7 +580,6 @@ document.addEventListener('DOMContentLoaded', function() {
             this.form.submit();
         });
     }
-    
     if (periodSelect) {
         periodSelect.addEventListener('change', function() {
             this.form.submit();
@@ -641,5 +587,4 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
-
 {% endblock %}

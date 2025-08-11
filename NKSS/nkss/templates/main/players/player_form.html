@@ -25,7 +25,6 @@
       <form method="post" class="row g-3">
         {% csrf_token %}
 
-        <!-- Osnovni podaci -->
         <div class="col-12">
           <h5 class="border-bottom pb-2 mb-3">📝 Osnovni podaci</h5>
         </div>
@@ -69,7 +68,6 @@
           {% endif %}
         </div>
 
-        <!-- Podaci o članstvu -->
         <div class="col-12">
           <h5 class="border-bottom pb-2 mb-3 mt-4">🏃 Članstvo u klubu</h5>
         </div>
@@ -103,7 +101,6 @@
           {% endif %}
         </div>
 
-        <!-- Prikaži greške forme -->
         {% if form.non_field_errors %}
           <div class="col-12">
             <div class="alert alert-danger">
@@ -122,7 +119,6 @@
 </div>
 
 <script>
-// JavaScript za automatsko skrivanje/prikazivanje polja "Član do" ovisno o statusu
 document.addEventListener('DOMContentLoaded', function() {
     const isActiveCheckbox = document.getElementById('{{ form.is_active_member.id_for_label }}');
     const memberUntilField = document.getElementById('{{ form.member_until.id_for_label }}');
@@ -136,11 +132,7 @@ document.addEventListener('DOMContentLoaded', function() {
             memberUntilContainer.style.display = 'block';
         }
     }
-
-    // Pozovi na početku
     toggleMemberUntil();
-
-    // Dodaj event listener
     isActiveCheckbox.addEventListener('change', toggleMemberUntil);
 });
 </script>
