@@ -158,12 +158,13 @@ class StaffMember(models.Model):
         ("U", "Uprava"),
         ("T", "Trener"),
         ("F", "Fizioterapeut"),
+        ("P", "Predsjednik"),
+        ("S", "Sportski direktor"),
         ("O", "Ostalo"),
     ]
 
     name = models.CharField(max_length=100)
     role = models.CharField(max_length=1, choices=ROLE_TYPES)
-    position = models.CharField(max_length=100, blank=True)  
     email = models.EmailField(blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     active = models.BooleanField(default=True)
@@ -191,7 +192,6 @@ class Equipment(models.Model):
     quantity = models.PositiveIntegerField()
     condition = models.CharField(max_length=50, default="Ispravno")
     purchase_date = models.DateField(null=True, blank=True)
-    description = models.TextField(blank=True)
 
     def __str__(self):
         return f"{self.get_type_display()} - {self.name} ({self.quantity})"

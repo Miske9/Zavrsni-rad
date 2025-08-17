@@ -583,7 +583,14 @@ def staffmember_delete(request, pk):
     return render(request, 'main/staff/staffmember_confirm_delete.html', {'staffmember': staffmember})
 
 def meeting_list(request):
+    query = request.GET.get("q", "")
     meetings = Meeting.objects.all()
+
+    if query:
+        meetings = meetings.filter(
+            Q(title__icontains=query) | Q(notes__icontains=query)
+        )
+
     return render(request, 'main/meeting/meeting_list.html', {'meetings': meetings})
 
 def meeting_detail(request, pk):
@@ -620,7 +627,17 @@ def meeting_delete(request, pk):
 
 def equipment_list(request):
     equipment = Equipment.objects.all()
-    return render(request, 'main/equipment/equipment_list.html', {'equipment': equipment})
+
+    vrsta = request.GET.get("vrsta")
+    if vrsta:
+        equipment = equipment.filter(type=vrsta)
+
+    context = {
+        "equipment": equipment,
+        "type_choices": Equipment.EQUIPMENT_TYPES,  
+    }
+    return render(request, "main/equipment/equipment_list.html", context)
+
 
 def equipment_detail(request, pk):
     equipment_item = get_object_or_404(Equipment, pk=pk)

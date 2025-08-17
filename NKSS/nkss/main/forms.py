@@ -307,11 +307,10 @@ CardFormSet = forms.formset_factory(CardEventForm, extra=1, max_num=30, can_dele
 class StaffMemberForm(forms.ModelForm):
     class Meta:
         model = StaffMember
-        fields = ['name', 'role', 'position', 'email', 'phone', 'active']
+        fields = ['name', 'role', 'email', 'phone', 'active']
         labels = {
             'name': 'Ime i prezime',
             'role': 'Uloga',
-            'position': 'Pozicija',
             'email': 'Email',
             'phone': 'Telefon',
             'active': 'Aktivan',
@@ -335,14 +334,13 @@ class MeetingForm(forms.ModelForm):
 class EquipmentForm(forms.ModelForm):
     class Meta:
         model = Equipment
-        fields = ['name', 'type', 'quantity', 'condition', 'purchase_date', 'description']
+        fields = ['name', 'type', 'quantity', 'condition', 'purchase_date']
         labels = {
             'name': 'Naziv',
             'type': 'Vrsta',
             'quantity': 'Količina',
             'condition': 'Stanje',
             'purchase_date': 'Datum nabave',
-            'description': 'Opis',
         }
         widgets = {
             'purchase_date': forms.DateInput(attrs={'type': 'date'}),

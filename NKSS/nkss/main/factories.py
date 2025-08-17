@@ -55,7 +55,6 @@ class MatchFactory(factory.django.DjangoModelFactory):
 
         self.save()
 
-        # POZIV generiranja golova i asistencija unutar ovog post_generation hooka
         self._generate_goals_and_assists(starting_eleven)
 
     def _generate_goals_and_assists(self, starting_players):

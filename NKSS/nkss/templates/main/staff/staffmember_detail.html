@@ -15,7 +15,6 @@
     <div class="card-body">
       <p><strong>Ime i prezime:</strong> {{ staffmember.name }}</p>
       <p><strong>Uloga:</strong> {{ staffmember.get_role_display }}</p>
-      <p><strong>Pozicija:</strong> {{ staffmember.position|default:"-" }}</p>
       {% if staffmember.phone %}
       <p><strong>Broj mobitela:</strong> {{ staffmember.phone }}</p>
       {% endif %} {% if staffmember.email %}

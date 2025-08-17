@@ -19,7 +19,6 @@
         <tr>
           <th>Ime i prezime</th>
           <th>Uloga</th>
-          <th>Pozicija</th>
           <th>Status</th>
         </tr>
       </thead>
@@ -33,7 +32,6 @@
           <td>
             <span class="badge bg-primary">{{ member.get_role_display }}</span>
           </td>
-          <td>{{ member.position|default:"-" }}</td>
           <td>
             {% if member.active %}
             <span class="badge bg-success">Aktivan</span>

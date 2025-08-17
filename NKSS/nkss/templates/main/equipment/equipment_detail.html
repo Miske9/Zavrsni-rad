@@ -6,12 +6,11 @@
       <h4 class="mb-0">🎽 Detalji opreme</h4>
     </div>
     <div class="card-body">
-      <p><strong>Vrsta:</strong> {{ equipment.name }}</p>
+      <p><strong>Naziv:</strong> {{ equipment.name }}</p>
+      <p><strong>Vrsta:</strong> {{ equipment.get_type_display }}</p>
       <p><strong>Količina:</strong> {{ equipment.quantity }}</p>
 
-      {% if equipment.description %}
-      <p><strong>Opis:</strong> {{ equipment.description }}</p>
-      {% endif %} {% if equipment.purchase_date %}
+      {% if equipment.purchase_date %}
       <p><strong>Datum kupnje:</strong> {{ equipment.purchase_date }}</p>
       {% endif %} {% if equipment.condition %}
       <p><strong>Stanje:</strong> {{ equipment.condition }}</p>

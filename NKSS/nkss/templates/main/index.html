@@ -1,4 +1,14 @@
-{% extends 'main/base.html' %} {%load static%}{% block content %}
-<h1>Dobrodošli na sustav za upravljanje klubom NK Smoljanci Sloboda!</h1>
-<img src="{% static 'images/nkss25.jpeg' %}" />
+{% extends 'main/base.html' %}
+{% load static %}
+{% block content %}
+  <h1 class="text-center mb-5">
+    NK Smoljanci Sloboda
+  </h1>
+  <br></br>
+  <div class="text-center">
+    <img src="{% static 'images/nkss25.jpeg' %}" 
+         class="d-block mx-auto img-fluid" 
+         style="width: 450px;" 
+         alt="NKSS logo" />
+  </div>
 {% endblock %}
