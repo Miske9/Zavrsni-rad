@@ -1,6 +1,5 @@
 from datetime import date
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
 
 POSITIONS = [
     ("GK", "Goalkeeper"),
@@ -87,12 +86,10 @@ class PlayerCategoryHistory(models.Model):
         return f"{self.player} - {self.get_category_display()} ({self.changed_at.date()})"
 
 class MembershipHistory(models.Model):
-    """Track membership changes for players"""
     ACTION_CHOICES = [
         ('ACTIVATED', 'Aktiviran'),
         ('DEACTIVATED', 'Deaktiviran'),
         ('REACTIVATED', 'Ponovno aktiviran'),
-        ('EXTENDED', 'Produženo članstvo'),
     ]
     
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='membership_history')
@@ -130,25 +127,9 @@ class Match(models.Model):
 class MatchEvent(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE)
     player = models.ForeignKey(Player, on_delete=models.CASCADE)
-    minute = models.PositiveIntegerField(validators=[MinValueValidator(1), MaxValueValidator(120)])
-    EVENT_TYPES = [
-        ("GOAL", "Goal"),
-        ("ASSIST", "Assist"),
-        ("YC", "Yellow Card"),
-        ("RC", "Red Card"),
-    ]
-    event_type = models.CharField(max_length=6, choices=EVENT_TYPES)
 
     def save(self, *args, **kwargs):
         if not self.pk:
-            if self.event_type == "GOAL":
-                self.player.goals += 1
-            elif self.event_type == "ASSIST":
-                self.player.assists += 1
-            elif self.event_type == "YC":
-                self.player.yellow_cards += 1
-            elif self.event_type == "RC":
-                self.player.red_cards += 1
             self.player.appearances += 1
             self.player.save()
         super().save(*args, **kwargs)
@@ -200,6 +181,12 @@ class Goal(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='goals')
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='goals_scored')
     minute = models.PositiveIntegerField()
+    
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.player.goals += 1
+            self.player.save()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Goal by {self.player} at {self.minute}'"
@@ -208,6 +195,12 @@ class Assist(models.Model):
     match = models.ForeignKey(Match, on_delete=models.CASCADE, related_name='assists')
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='assists_made')
     minute = models.PositiveIntegerField()
+    
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            self.player.assists += 1
+            self.player.save()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"Assist by {self.player} at {self.minute}'"
@@ -217,6 +210,15 @@ class Card(models.Model):
     player = models.ForeignKey(Player, on_delete=models.CASCADE, related_name='cards_received')
     card_type = models.CharField(max_length=1, choices=CARD_TYPES)
     minute = models.PositiveIntegerField()
+    
+    def save(self, *args, **kwargs):
+        if not self.pk:
+            if self.card_type == "Y":
+                self.player.yellow_cards += 1
+            if self.card_type == "R":
+                self.player.red_cards += 1
+            self.player.save()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.get_card_type_display()} for {self.player} at {self.minute}'"

@@ -1,9 +1,6 @@
 from datetime import timedelta, date
 from django.shortcuts import render, redirect, get_object_or_404
-from django.db.models import Q, Sum, Avg, Count, F
-from django.db.models.signals import pre_save
-from django.dispatch import receiver
-from django.utils import timezone
+from django.db.models import Q, Sum, Count, F
 from .models import *
 from .forms import *
 
@@ -13,38 +10,27 @@ def index(request):
 def player_list(request):
     players = Player.objects.all().order_by('category', 'last_name')
 
-    category = request.GET.get('category')
-    first_name = request.GET.get('first_name')
-    last_name = request.GET.get('last_name')
-    dob = request.GET.get('date_of_birth')
-    position = request.GET.get('position')
-    status = request.GET.get('status')  
-
-    if category:
-        players = players.filter(category=category)
-    if first_name:
-        players = players.filter(first_name__icontains=first_name)
-    if last_name:
-        players = players.filter(last_name__icontains=last_name)
-    if dob:
-        players = players.filter(date_of_birth=dob)
-    if position:
-        players = players.filter(position=position)
-    if status == 'active':
+    filters = ['category', 'first_name', 'last_name', 'date_of_birth', 'position', 'status']
+    filter_values = {f: request.GET.get(f) for f in filters}
+    
+    if filter_values['category']:
+        players = players.filter(category=filter_values['category'])
+    if filter_values['first_name']:
+        players = players.filter(first_name__icontains=filter_values['first_name'])
+    if filter_values['last_name']:
+        players = players.filter(last_name__icontains=filter_values['last_name'])
+    if filter_values['date_of_birth']:
+        players = players.filter(date_of_birth=filter_values['date_of_birth'])
+    if filter_values['position']:
+        players = players.filter(position=filter_values['position'])
+    if filter_values['status'] == 'active':
         players = players.filter(is_active_member=True)
-    elif status == 'inactive':
+    elif filter_values['status'] == 'inactive':
         players = players.filter(is_active_member=False)
 
     return render(request, 'main/players/player_list.html', {
         'players': players,
-        'filter_values': {
-            'category': category,
-            'first_name': first_name,
-            'last_name': last_name,
-            'date_of_birth': dob,
-            'position': position,
-            'status': status,
-        },
+        'filter_values': filter_values,
         'categories': CATEGORIES,
         'positions': POSITIONS,
     })
@@ -52,10 +38,26 @@ def player_list(request):
 def player_detail(request, pk):
     player = get_object_or_404(Player, pk=pk)
     history = player.category_history.order_by('-changed_at')
+    
+    player_matches = Match.objects.filter(
+        Q(starting_players=player) | Q(bench_players=player)
+    ).distinct()
+    real_appearances = player_matches.count()
+    real_goals = Goal.objects.filter(player=player).count()
+    real_assists = Assist.objects.filter(player=player).count()
+    real_yellow_cards = Card.objects.filter(player=player, card_type='Y').count()
+    real_red_cards = Card.objects.filter(player=player, card_type='R').count()
+    
     return render(request, 'main/players/player_detail.html', {
         'player': player,
-        'category_history': history
+        'category_history': history,
+        'real_appearances': real_appearances,
+        'real_goals': real_goals,
+        'real_assists': real_assists,
+        'real_yellow_cards': real_yellow_cards,
+        'real_red_cards': real_red_cards,
     })
+
 
 def player_create(request):
     if request.method == 'POST':
@@ -71,7 +73,7 @@ def player_create(request):
 
 def player_update(request, pk):
     player = get_object_or_404(Player, pk=pk)
-    old_category = player.category  
+    old_category = player.category
 
     if request.method == 'POST':
         form = PlayerForm(request.POST, instance=player)
@@ -93,7 +95,7 @@ def player_update(request, pk):
             form.initial['member_until'] = date.today()
         elif request.GET.get('activate') == 'true':
             form.initial['is_active_member'] = True
-            form.initial['member_until'] = None  
+            form.initial['member_until'] = None
             
     return render(request, 'main/players/player_form.html', {'form': form})
 
@@ -105,15 +107,15 @@ def player_delete(request, pk):
     return render(request, 'main/players/player_confirm_delete.html', {'player': player})
 
 def stats_dashboard(request):
-    selected_category = request.GET.get('category', '') 
-    selected_period = request.GET.get('period', 'all')  
+    selected_category = request.GET.get('category', '')
+    selected_period = request.GET.get('period', 'all')
     today = date.today()
-    date_filter = None
     
+    date_filter = None
     if selected_period == 'month':
         date_filter = today - timedelta(days=30)
         period_label = "Zadnjih 30 dana"
-    elif selected_period == 'year': 
+    elif selected_period == 'year':
         date_filter = today - timedelta(days=365)
         period_label = "Zadnjih godinu dana"
     else:
@@ -133,7 +135,7 @@ def stats_dashboard(request):
         Goal.objects.filter(match__in=matches)
         .values('player__id', 'player__first_name', 'player__last_name', 'player__category')
         .annotate(total=Count('id'))
-        .order_by('-total')[:15]  
+        .order_by('-total')[:15]
     )
     
     assists_queryset = (
@@ -152,7 +154,7 @@ def stats_dashboard(request):
         if player_matches.exists():
             appearances_queryset.append({
                 'player__id': player.id,
-                'player__first_name': player.first_name, 
+                'player__first_name': player.first_name,
                 'player__last_name': player.last_name,
                 'player__category': player.category,
                 'total': player_matches.count()
@@ -168,7 +170,7 @@ def stats_dashboard(request):
     )
     
     red_cards_queryset = (
-        Card.objects.filter(match__in=matches, card_type='R') 
+        Card.objects.filter(match__in=matches, card_type='R')
         .values('player__id', 'player__first_name', 'player__last_name', 'player__category')
         .annotate(total=Count('id'))
         .order_by('-total')[:10]
@@ -198,11 +200,11 @@ def stats_dashboard(request):
                     'wins': cat_matches.filter(home_score__gt=F('away_score')).count(),
                 })
     
-    def format_data(queryset, value_field='total'):
+    def format_data(queryset):
         return [
             {
                 "name": f"{item.get('first_name') or item.get('player__first_name')} {item.get('last_name') or item.get('player__last_name')}",
-                "value": item.get(value_field) or 0,
+                "value": item.get('total') or 0,
                 "category": item.get('category') or item.get('player__category', '')
             } for item in queryset
         ]
@@ -221,7 +223,7 @@ def stats_dashboard(request):
         'club_stats': {
             'total_matches': total_matches,
             'wins': wins,
-            'draws': draws, 
+            'draws': draws,
             'losses': losses,
             'win_percentage': round((wins / total_matches * 100), 1) if total_matches > 0 else 0,
             'total_goals_scored': total_goals_scored,
@@ -248,17 +250,13 @@ def match_list(request):
 
     return render(request, "main/matches/match_list.html", {
         "matches": matches,
-        "filter_values": {
-            "category": category,
-            "date": date
-        },
-        'categories': CATEGORIES 
+        "filter_values": {"category": category, "date": date},
+        'categories': CATEGORIES
     })
 
 def match_detail(request, pk):
     match = get_object_or_404(Match, pk=pk)
-    events = MatchEvent.objects.filter(match=match).order_by('minute')
-
+    
     valid_players = match.starting_players.all() | match.bench_players.all()
     active_valid_players = valid_players.filter(is_active_member=True).exclude(member_until__lt=date.today())
 
@@ -272,279 +270,183 @@ def match_detail(request, pk):
     else:
         form = MatchEventForm()
 
-    goal_form = GoalEventForm()
-    goal_form.fields['player'].queryset = active_valid_players.distinct()
-
-    assist_form = AssistEventForm()
-    assist_form.fields['player'].queryset = active_valid_players.distinct()
-
-    card_form = CardEventForm()
-    card_form.fields['player'].queryset = active_valid_players.distinct()
+    forms = {}
+    for form_name, form_class in [('goal_form', GoalEventForm), ('assist_form', AssistEventForm), ('card_form', CardEventForm)]:
+        forms[form_name] = form_class()
+        forms[form_name].fields['player'].queryset = active_valid_players.distinct()
 
     return render(request, "main/matches/match_detail.html", {
         "match": match,
-        "events": events,
         "form": form,
-        "goal_form": goal_form,
-        "assist_form": assist_form,
-        "card_form": card_form,
+        **forms
     })
 
 def match_create(request):
     category = request.GET.get('category') or request.POST.get('category')
-    valid_players = Player.objects.none()
-    if category:
-        valid_players = Player.objects.filter(category=category)
+    valid_players = Player.objects.filter(category=category) if category else Player.objects.none()
+    
+    formset_kwargs = {'form_kwargs': {'valid_players': valid_players}}
     
     if request.method == "POST":
         form = MatchForm(request.POST)
-        goal_formset = GoalFormSet(
-            request.POST, 
-            prefix='goals',
-            form_kwargs={'valid_players': valid_players}
-        )
-        assist_formset = AssistFormSet(
-            request.POST, 
-            prefix='assists',
-            form_kwargs={'valid_players': valid_players}
-        )
-        card_formset = CardFormSet(
-            request.POST, 
-            prefix='cards',
-            form_kwargs={'valid_players': valid_players}
-        )
+        formsets = {
+            'goals': GoalFormSet(request.POST, prefix='goals', **formset_kwargs),
+            'assists': AssistFormSet(request.POST, prefix='assists', **formset_kwargs),
+            'cards': CardFormSet(request.POST, prefix='cards', **formset_kwargs)
+        }
+        
         if form.is_valid():
-            event_errors = form.validate_events(goal_formset, assist_formset, card_formset)
-            if not event_errors and goal_formset.is_valid() and assist_formset.is_valid() and card_formset.is_valid():
+            event_errors = form.validate_events(formsets['goals'], formsets['assists'], formsets['cards'])
+            if not event_errors and all(fs.is_valid() for fs in formsets.values()):
                 match = form.save()
-               
-                for player in form.cleaned_data['starting_players']:
-                    player.appearances += 1
-                    player.save()
-                for player in form.cleaned_data.get('bench_players', []):
-                    player.appearances += 1
-                    player.save()
-               
-                for goal_form in goal_formset:
-                    if goal_form.is_valid() and goal_form.cleaned_data.get('player'):
-                        goal_data = goal_form.cleaned_data
-                        Goal.objects.create(
-                            match=match,
-                            player=goal_data['player'],
-                            minute=goal_data['minute']
-                        )
-                        goal_data['player'].goals += 1
-                        goal_data['player'].save()
-                        
-                for assist_form in assist_formset:
-                    if assist_form.is_valid() and assist_form.cleaned_data.get('player'):
-                        assist_data = assist_form.cleaned_data
-                        Assist.objects.create(
-                            match=match,
-                            player=assist_data['player'],
-                            minute=assist_data['minute']
-                        )
-                        assist_data['player'].assists += 1
-                        assist_data['player'].save()
                 
-                for card_form in card_formset:
-                    if card_form.is_valid() and card_form.cleaned_data.get('player'):
-                        card_data = card_form.cleaned_data
-                        Card.objects.create(
-                            match=match,
-                            player=card_data['player'],
-                            card_type=card_data['card_type'],
-                            minute=card_data['minute']
-                        )
-                        if card_data['card_type'] == 'Y':
-                            card_data['player'].yellow_cards += 1
-                        elif card_data['card_type'] == 'R':
-                            card_data['player'].red_cards += 1
-                        card_data['player'].save()
+                all_players = form.cleaned_data['starting_players'] | form.cleaned_data.get('bench_players', Player.objects.none())
+                for player in all_players:
+                    player.appearances += 1
+                    player.save()
+                
+                for event_type, formset in formsets.items():
+                    model_class = {'goals': Goal, 'assists': Assist, 'cards': Card}[event_type]
+                    for event_form in formset:
+                        if event_form.is_valid() and event_form.cleaned_data.get('player'):
+                            event_data = event_form.cleaned_data.copy()
+                            event_data.pop('DELETE', None)
+                            event_data.pop('id', None)
+                            model_class.objects.create(match=match, **event_data)
+                
                 return redirect("main:match_detail", pk=match.pk)
             else:
                 for error in event_errors:
                     form.add_error(None, error)
     else:
-        initial_data = {}
-        if category:
-            initial_data['category'] = category
+        initial_data = {'category': category} if category else {}
         form = MatchForm(initial=initial_data)
-        goal_formset = GoalFormSet(
-            prefix='goals',
-            form_kwargs={'valid_players': valid_players}
-        )
-        assist_formset = AssistFormSet(
-            prefix='assists',
-            form_kwargs={'valid_players': valid_players}
-        )
-        card_formset = CardFormSet(
-            prefix='cards',
-            form_kwargs={'valid_players': valid_players}
-        )
+        formsets = {
+            'goals': GoalFormSet(prefix='goals', **formset_kwargs),
+            'assists': AssistFormSet(prefix='assists', **formset_kwargs),
+            'cards': CardFormSet(prefix='cards', **formset_kwargs)
+        }
     
     return render(request, "main/matches/match_form.html", {
         "form": form,
-        "goal_formset": goal_formset,
-        "assist_formset": assist_formset,
-        "card_formset": card_formset,
+        "goal_formset": formsets['goals'],
+        "assist_formset": formsets['assists'],
+        "card_formset": formsets['cards'],
     })
 
 def match_update(request, pk):
     match = get_object_or_404(Match, pk=pk)
     valid_players = Player.objects.filter(category=match.category)
+    formset_kwargs = {'form_kwargs': {'valid_players': valid_players}}
 
     if request.method == "POST":
         form = MatchForm(request.POST, instance=match)
-        goal_formset = GoalFormSet(request.POST, prefix='goals', form_kwargs={'valid_players': valid_players})
-        assist_formset = AssistFormSet(request.POST, prefix='assists', form_kwargs={'valid_players': valid_players})
-        card_formset = CardFormSet(request.POST, prefix='cards', form_kwargs={'valid_players': valid_players})
+        formsets = {
+            'goals': GoalFormSet(request.POST, prefix='goals', **formset_kwargs),
+            'assists': AssistFormSet(request.POST, prefix='assists', **formset_kwargs),
+            'cards': CardFormSet(request.POST, prefix='cards', **formset_kwargs)
+        }
 
-        if form.is_valid() and goal_formset.is_valid() and assist_formset.is_valid() and card_formset.is_valid():
+        if form.is_valid() and all(fs.is_valid() for fs in formsets.values()):
             form.save()
+            
             match.goals.all().delete()
             match.assists.all().delete()
             match.cards.all().delete()
 
-            for gf in goal_formset:
-                if gf.cleaned_data and not gf.cleaned_data.get('DELETE'):
-                    data = {k: v for k, v in gf.cleaned_data.items() if k not in ['DELETE', 'id']}
-                    Goal.objects.create(match=match, **data)
-
-            for af in assist_formset:
-                if af.cleaned_data and not af.cleaned_data.get('DELETE'):
-                    data = {k: v for k, v in af.cleaned_data.items() if k not in ['DELETE', 'id']}
-                    Assist.objects.create(match=match, **data)
-
-            for cf in card_formset:
-                if cf.cleaned_data and not cf.cleaned_data.get('DELETE'):
-                    data = {k: v for k, v in cf.cleaned_data.items() if k not in ['DELETE', 'id']}
-                    Card.objects.create(match=match, **data)
+            models_map = {'goals': Goal, 'assists': Assist, 'cards': Card}
+            for event_type, formset in formsets.items():
+                model_class = models_map[event_type]
+                for event_form in formset:
+                    if event_form.cleaned_data and not event_form.cleaned_data.get('DELETE'):
+                        data = {k: v for k, v in event_form.cleaned_data.items() if k not in ['DELETE', 'id']}
+                        model_class.objects.create(match=match, **data)
 
             return redirect("main:match_detail", pk=match.pk)
     else:
         form = MatchForm(instance=match)
-        goal_formset = GoalFormSet(
-            prefix='goals',
-            initial=[
-                {'player': g.player, 'minute': g.minute}
-                for g in match.goals.all()
-            ],
-            form_kwargs={'valid_players': valid_players}
-        )
+        
+        formsets = {
+            'goals': GoalFormSet(
+                prefix='goals',
+                initial=[{'player': g.player, 'minute': g.minute} for g in match.goals.all()],
+                **formset_kwargs
+            ),
+            'assists': AssistFormSet(
+                prefix='assists',
+                initial=[{'player': a.player, 'minute': a.minute} for a in match.assists.all()],
+                **formset_kwargs
+            ),
+            'cards': CardFormSet(
+                prefix='cards',
+                initial=[{'player': c.player, 'minute': c.minute, 'card_type': c.card_type} for c in match.cards.all()],
+                **formset_kwargs
+            )
+        }
 
-        assist_formset = AssistFormSet(
-            prefix='assists',
-            initial=[
-                {'player': a.player, 'minute': a.minute}
-                for a in match.assists.all()
-            ],
-            form_kwargs={'valid_players': valid_players}
-        )
-
-        card_formset = CardFormSet(
-            prefix='cards',
-            initial=[
-                {'player': c.player, 'minute': c.minute, 'card_type': c.card_type}
-                for c in match.cards.all()
-            ],
-            form_kwargs={'valid_players': valid_players}
-        )
-
-
-        return render(request, "main/matches/match_form.html", {
-            "form": form,
-            "goal_formset": goal_formset,
-            "assist_formset": assist_formset,
-            "card_formset": card_formset,
-        })
-
+    return render(request, "main/matches/match_form.html", {
+        "form": form,
+        "goal_formset": formsets['goals'],
+        "assist_formset": formsets['assists'],
+        "card_formset": formsets['cards'],
+    })
 
 def match_delete(request, pk):
     match = get_object_or_404(Match, pk=pk)
     if request.method == "POST":
         for goal in match.goals.all():
-            player = goal.player
-            player.goals = max(player.goals - 1, 0)
-            player.save()
+            goal.player.goals = max(goal.player.goals - 1, 0)
+            goal.player.save()
 
         for assist in match.assists.all():
-            player = assist.player
-            player.assists = max(player.assists - 1, 0)
-            player.save()
+            assist.player.assists = max(assist.player.assists - 1, 0)
+            assist.player.save()
 
         for card in match.cards.all():
-            player = card.player
             if card.card_type == 'Y':
-                player.yellow_cards = max(player.yellow_cards - 1, 0)
+                card.player.yellow_cards = max(card.player.yellow_cards - 1, 0)
             elif card.card_type == 'R':
-                player.red_cards = max(player.red_cards - 1, 0)
-            player.save()
+                card.player.red_cards = max(card.player.red_cards - 1, 0)
+            card.player.save()
 
         for player in match.starting_players.all() | match.bench_players.all():
             player.appearances = max(player.appearances - 1, 0)
             player.save()
-
-        match.goals.all().delete()
-        match.assists.all().delete()
-        match.cards.all().delete()
 
         match.delete()
         return redirect("main:match_list")
 
     return render(request, "main/matches/match_confirm_delete.html", {"match": match})
 
-def add_goal(request, match_id):
+def add_event(request, match_id, event_type):
     match = get_object_or_404(Match, pk=match_id)
     if request.method == 'POST':
         player_id = request.POST['player']
         player = get_object_or_404(Player, id=player_id)
         
-       
         if not player.is_active_member:
             return redirect('main:match_detail', pk=match_id)
         
         minute = request.POST['minute']
-        Goal.objects.create(match=match, player=player, minute=minute)
-        player.goals += 1
-        player.save()
-        return redirect('main:match_detail', pk=match_id)
+        
+        if event_type == 'goal':
+            Goal.objects.create(match=match, player=player, minute=minute)
+        elif event_type == 'assist':
+            Assist.objects.create(match=match, player=player, minute=minute)
+        elif event_type == 'card':
+            card_type = request.POST['card_type']
+            Card.objects.create(match=match, player=player, minute=minute, card_type=card_type)
+    
+    return redirect('main:match_detail', pk=match_id)
+
+def add_goal(request, match_id):
+    return add_event(request, match_id, 'goal')
 
 def add_assist(request, match_id):
-    match = get_object_or_404(Match, pk=match_id)
-    if request.method == 'POST':
-        player_id = request.POST['player']
-        player = get_object_or_404(Player, id=player_id)
-        
-       
-        if not player.is_active_member:
-            return redirect('main:match_detail', pk=match_id)
-        
-        minute = request.POST['minute']
-        Assist.objects.create(match=match, player=player, minute=minute)
-        player.assists += 1
-        player.save()
-    return redirect('main:match_detail', pk=match_id)
+    return add_event(request, match_id, 'assist')
 
 def add_card(request, match_id):
-    match = get_object_or_404(Match, pk=match_id)
-    if request.method == 'POST':
-        player_id = request.POST['player']
-        player = get_object_or_404(Player, id=player_id)
-        
-       
-        if not player.is_active_member:
-            return redirect('main:match_detail', pk=match_id)
-        
-        minute = request.POST['minute']
-        card_type = request.POST['card_type']
-        Card.objects.create(match=match, player=player, minute=minute, card_type=card_type)
-        if card_type == 'Y':
-            player.yellow_cards += 1
-        elif card_type == 'R':
-            player.red_cards += 1
-        player.save()
-    return redirect('main:match_detail', pk=match_id)
+    return add_event(request, match_id, 'card')
 
 def staffmember_list(request):
     staffmembers = StaffMember.objects.all()
@@ -634,10 +536,9 @@ def equipment_list(request):
 
     context = {
         "equipment": equipment,
-        "type_choices": Equipment.EQUIPMENT_TYPES,  
+        "type_choices": Equipment.EQUIPMENT_TYPES,
     }
     return render(request, "main/equipment/equipment_list.html", context)
-
 
 def equipment_detail(request, pk):
     equipment_item = get_object_or_404(Equipment, pk=pk)

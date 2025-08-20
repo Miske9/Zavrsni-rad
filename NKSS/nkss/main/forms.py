@@ -237,11 +237,9 @@ class MatchForm(forms.ModelForm):
 class MatchEventForm(forms.ModelForm):
     class Meta:
         model = MatchEvent
-        fields = ['player', 'minute', 'event_type']
+        fields = ['player']
         labels = {
             'player': 'Igrač',
-            'minute': 'Minuta',
-            'event_type': 'Vrsta događaja',
         }
         
 class GoalEventForm(forms.Form):
