@@ -2,16 +2,16 @@ from datetime import date
 from django.db import models
 
 POSITIONS = [
-    ("GK", "Goalkeeper"),
-    ("DF", "Defender"),
-    ("MF", "Midfielder"),
-    ("FW", "Forward"),
+    ("GK", "Golman"),
+    ("DF", "Branič"),
+    ("MF", "Vezni igrač"),
+    ("FW", "Napadač"),
 ]
 
 CATEGORIES = [
     ("U9", "U9"),
     ("U11", "U11"),
-    ("MP", "Mladi pioniri"),
+    ("MP", "Mlađi pioniri"),
     ("SP", "Stariji pioniri"),
     ("JUN", "Juniori"),
     ("SEN", "Seniori"),
@@ -19,8 +19,8 @@ CATEGORIES = [
 ]
 
 CARD_TYPES = [
-    ('Y', 'Yellow Card'),
-    ('R', 'Red Card'),
+    ('Y', 'Žuti karton'),
+    ('R', 'Crveni karton'),
 ]
 
 class Player(models.Model):

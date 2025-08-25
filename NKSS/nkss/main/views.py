@@ -58,7 +58,6 @@ def player_detail(request, pk):
         'real_red_cards': real_red_cards,
     })
 
-
 def player_create(request):
     if request.method == 'POST':
         form = PlayerForm(request.POST)
