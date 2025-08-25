@@ -4,13 +4,12 @@
 {% block content %}
 <div class="container my-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2 class="fw-bold text-primary">🎽 Sportska oprema</h2>
+    <h2 class="fw-bold">🎽 Sportska oprema</h2>
     <a class="btn btn-success shadow" href="{% url 'main:equipment_create' %}">
       <i class="bi bi-plus-circle"></i> Dodaj opremu
     </a>
   </div>
 
-  <!-- Filter i sortiranje -->
   <form method="get" class="d-flex gap-2 mb-3">
     <select name="vrsta" class="form-select" onchange="this.form.submit()">
       <option value="">Vrste</option>
@@ -22,7 +21,6 @@
     </select>
   </form>
 
-  <!-- Tabela -->
   <div class="table-responsive shadow-sm rounded border">
     <table class="table table-hover align-middle">
       <thead class="table-dark">
